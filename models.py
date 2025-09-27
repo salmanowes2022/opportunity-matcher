@@ -22,8 +22,24 @@ class Opportunity(BaseModel):
     deadline: Optional[str] = None
 
 class MatchResult(BaseModel):
-    """AI evaluation result with structured output"""
+    """AI evaluation result with structured output - ONLY for opportunity matching"""
     compatibility_score: float  # 0.0 to 1.0
     strengths: str  # What makes them a good fit
     gaps: str  # What they might be missing
     recommendation: str  # Should they apply and how to improve
+
+class ApplicationMaterial(BaseModel):
+    """Generated application material - ONLY for material generation"""
+    material_type: str  # "cover_letter", "personal_statement", "motivation_letter"
+    content: str
+    word_count: int
+    key_points_highlighted: List[str]
+    suggestions_for_improvement: str
+
+class DocumentAnalysis(BaseModel):
+    """Analysis result from uploaded document images - ONLY for document analysis"""
+    document_type: str  # "cv", "transcript", "certificate", "other"
+    extracted_text: str
+    key_information: dict  # Structured data extracted
+    suggestions: str  # How to use this info
+    confidence_score: float  # 0.0 to 1.0

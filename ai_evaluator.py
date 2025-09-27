@@ -1,6 +1,6 @@
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
-from models import UserProfile, Opportunity, MatchResult
+from models import UserProfile, Opportunity, MatchResult  # Only import what you need
 import os
 
 def evaluate_match(profile: UserProfile, opportunity: Opportunity) -> MatchResult:
@@ -56,20 +56,20 @@ Be specific and actionable in your feedback."""
 
     # Initialize the LLM
     llm = ChatOpenAI(
-        model="gpt-4o-mini",  # Cheaper and faster than gpt-4
-        temperature=0.3,  # Lower = more consistent, higher = more creative
+        model="gpt-4o-mini",  # Cheaper and faster
+        temperature=0.3,  # Lower = more consistent
         api_key=os.environ.get("OPENAI_API_KEY")
     )
 
-    # Create chain with structured output
+    # Create chain with structured output - ONLY MatchResult
     chain = prompt | llm.with_structured_output(MatchResult)
 
-    # Prepare the data for the prompt
+    # Prepare the data
     input_data = {
         "name": profile.name,
         "education_level": profile.education_level,
         "field_of_study": profile.field_of_study,
-        "gpa": profile.gpa if profile.gpa else "Not provided",
+        "gpa": profile.gpa or "Not provided",
         "experience_years": profile.experience_years,
         "skills": profile.skills,
         "languages": profile.languages,
@@ -81,7 +81,7 @@ Be specific and actionable in your feedback."""
         "opp_requirements": opportunity.requirements
     }
 
-    # Run the chain and get the result
+    # Run the chain
     try:
         result = chain.invoke(input_data)
         return result
@@ -93,20 +93,3 @@ Be specific and actionable in your feedback."""
             gaps="Unable to analyze at this time.",
             recommendation=f"Error: {str(e)}"
         )
-
-
-# Optional: Function to validate API key is working
-def test_api_connection():
-    """
-    Simple test to check if OpenAI API is working
-    """
-    try:
-        llm = ChatOpenAI(
-            model="gpt-4o-mini",
-            api_key=os.environ.get("OPENAI_API_KEY")
-        )
-        
-        response = llm.invoke("Say 'API is working' if you can read this.")
-        return True, "API connection successful"
-    except Exception as e:
-        return False, f"API connection failed: {str(e)}"

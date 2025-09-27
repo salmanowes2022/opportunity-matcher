@@ -4,3 +4,6 @@ langchain
 langchain-openai
 langchain-core
 python-dotenv
+typing-extensions
+Pillow
+reportlab
