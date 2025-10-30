@@ -1,5 +1,5 @@
-from pydantic import BaseModel
-from typing import List, Optional
+from pydantic import BaseModel, Field
+from typing import List, Optional, Dict
 
 class UserProfile(BaseModel):
     """Stores user information for matching against opportunities"""
@@ -40,6 +40,9 @@ class DocumentAnalysis(BaseModel):
     """Analysis result from uploaded document images - ONLY for document analysis"""
     document_type: str  # "cv", "transcript", "certificate", "other"
     extracted_text: str
-    key_information: dict  # Structured data extracted
+    key_information: Dict[str, str] = Field(default_factory=dict)  # Structured data extracted
     suggestions: str  # How to use this info
     confidence_score: float  # 0.0 to 1.0
+
+    class Config:
+        extra = "forbid"

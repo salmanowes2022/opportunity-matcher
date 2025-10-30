@@ -20,6 +20,16 @@ if 'GEMINI_API_KEY' not in os.environ:
     if hasattr(st, 'secrets') and 'GEMINI_API_KEY' in st.secrets:
         os.environ['GEMINI_API_KEY'] = st.secrets['GEMINI_API_KEY']
 
+# Validate API keys
+def validate_api_keys():
+    """Check if required API keys are configured"""
+    errors = []
+    if not os.environ.get('OPENAI_API_KEY'):
+        errors.append("❌ OPENAI_API_KEY is missing")
+    if not os.environ.get('GEMINI_API_KEY'):
+        errors.append("❌ GEMINI_API_KEY is missing")
+    return errors
+
 # Page configuration
 st.set_page_config(
     page_title="Opportunity Matching Assistant",
@@ -35,6 +45,27 @@ apply_custom_css()
 st.markdown('<h1 class="custom-title">Opportunity Matching Assistant</h1>', unsafe_allow_html=True)
 st.markdown('<p class="custom-subtitle">AI-powered tool to evaluate how well you match scholarships, jobs, and programs</p>', unsafe_allow_html=True)
 
+# Check API keys and show warning if missing
+api_errors = validate_api_keys()
+if api_errors:
+    st.error("⚠️ **API Configuration Issues Detected:**")
+    for error in api_errors:
+        st.warning(error)
+    st.info("💡 **To fix:** Add your API keys to the `.env` file in the project root directory.")
+    with st.expander("📖 How to get API keys"):
+        st.markdown("""
+        **OpenAI API Key:**
+        1. Go to https://platform.openai.com/api-keys
+        2. Create a new API key
+        3. Add to `.env` file as: `OPENAI_API_KEY=your-key-here`
+
+        **Google Gemini API Key:**
+        1. Go to https://makersuite.google.com/app/apikey
+        2. Create a new API key
+        3. Add to `.env` file as: `GEMINI_API_KEY=your-key-here`
+        """)
+    st.markdown("---")
+
 # Initialize session state
 if 'profile' not in st.session_state:
     st.session_state.profile = None
@@ -42,10 +73,14 @@ if 'evaluation_history' not in st.session_state:
     st.session_state.evaluation_history = []
 if 'extracted_opportunity_data' not in st.session_state:
     st.session_state.extracted_opportunity_data = {}
+if 'selected_opportunity_for_materials' not in st.session_state:
+    st.session_state.selected_opportunity_for_materials = None
+if 'active_tab' not in st.session_state:
+    st.session_state.active_tab = 0
 
 # Create all tabs
 tab1, tab2, tab3, tab4, tab5,tab6 = st.tabs([
-    "📝 Your Profile", 
+    "📝 Your Profile",
     "🔍 Check Match", 
     "📊 History", 
     "✍️ Generate Materials", 
@@ -57,7 +92,35 @@ tab1, tab2, tab3, tab4, tab5,tab6 = st.tabs([
 with tab1:
     st.header("Create Your Profile")
     st.markdown("Fill out your information once, then use it to evaluate multiple opportunities.")
-    
+
+    # Quick action buttons
+    col_btn1, col_btn2, col_btn3 = st.columns(3)
+    with col_btn1:
+        if st.button("📄 Upload CV to Auto-fill", use_container_width=True, type="secondary"):
+            st.session_state.active_tab = "tab5"
+            st.info("👉 Go to 'Upload Documents' tab to upload your CV")
+    with col_btn2:
+        if st.button("🚀 Load Demo Profile", use_container_width=True, help="Quick load a sample profile for testing"):
+            demo_profile = UserProfile(
+                name="Sarah Ahmed",
+                education_level="Master's",
+                field_of_study="Computer Science",
+                gpa=3.8,
+                skills="Python, Machine Learning, Data Analysis, Natural Language Processing, Research, Technical Writing, Problem Solving",
+                experience_years=3,
+                languages="English, Arabic, French",
+                achievements="Published 2 research papers on AI ethics, Won university hackathon 2023, Teaching Assistant for 2 years, Google Summer of Code participant, Dean's List all semesters",
+                goals="Seeking PhD opportunities in AI research, particularly interested in ethical AI and NLP applications. Looking to contribute to cutting-edge research while developing teaching experience."
+            )
+            st.session_state.profile = demo_profile
+            st.success("✅ Demo profile loaded! Scroll down to see details.")
+            st.rerun()
+    with col_btn3:
+        if st.session_state.profile and st.button("🎯 Go to Batch Match", use_container_width=True, type="primary"):
+            st.info("👉 Go to 'Check Match' tab and scroll to Batch Match section")
+
+    st.markdown("---")
+
     with st.form("profile_form"):
         # Basic Information
         st.subheader("Basic Information")
@@ -144,7 +207,20 @@ with tab1:
     if st.session_state.profile:
         st.divider()
         st.subheader("Your Saved Profile")
-        
+
+        # Next step button
+        st.markdown("""
+        <div class="success-card">
+            <strong>✅ Profile Ready!</strong><br>
+            You can now match against all scholarships in the database.
+        </div>
+        """, unsafe_allow_html=True)
+
+        if st.button("🚀 Match Against All Scholarships", type="primary", use_container_width=True, key="goto_batch_match"):
+            st.info("👉 Go to 'Check Match' tab and scroll down to 'Batch Match' section")
+
+        st.markdown("---")
+
         # Profile summary cards
         col1, col2, col3 = st.columns(3)
         with col1:
@@ -575,6 +651,161 @@ with tab2:
                         except Exception as e:
                             st.error(f"❌ API Test Failed: {str(e)}")
 
+        # BATCH MATCHING SECTION - Match against all scholarships in database
+        st.divider()
+        st.header("🎯 Batch Match - Evaluate All Scholarships")
+        st.markdown("Automatically evaluate your profile against **all scholarships** in the database and find your best matches!")
+
+        col_batch1, col_batch2 = st.columns([2, 1])
+        with col_batch1:
+            st.info("💡 This will run AI evaluation for each scholarship in the database and show results sorted by compatibility score.")
+
+        with col_batch2:
+            if st.button("🚀 Match Against All Scholarships", type="primary", use_container_width=True):
+                # Load all opportunities from database
+                from opportunities_storage import load_all_opportunities
+                all_opportunities = load_all_opportunities()
+
+                if not all_opportunities:
+                    st.warning("⚠️ No scholarships found in database. Add some scholarships first!")
+                else:
+                    st.markdown(f"""
+                    <div class="info-card">
+                        <strong>📊 Batch Evaluation Started</strong><br>
+                        Evaluating against {len(all_opportunities)} scholarships...
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                    # Progress bar
+                    progress_bar = st.progress(0)
+                    status_text = st.empty()
+
+                    batch_results = []
+
+                    # Evaluate each opportunity
+                    for idx, opp_data in enumerate(all_opportunities):
+                        status_text.text(f"Evaluating: {opp_data.get('title', 'Unknown')} ({idx + 1}/{len(all_opportunities)})")
+
+                        try:
+                            # Create Opportunity object
+                            opportunity = Opportunity(
+                                title=opp_data.get('title', ''),
+                                opp_type=opp_data.get('type', 'Scholarship'),
+                                description=opp_data.get('description', ''),
+                                requirements=opp_data.get('requirements', ''),
+                                deadline=opp_data.get('deadline')
+                            )
+
+                            # Evaluate match
+                            from ai_evaluator import evaluate_match
+                            result = evaluate_match(st.session_state.profile, opportunity)
+
+                            # Store result
+                            batch_results.append({
+                                'opportunity': opportunity,
+                                'result': result,
+                                'opp_data': opp_data,
+                                'score': result.compatibility_score
+                            })
+
+                        except Exception as e:
+                            st.warning(f"⚠️ Skipped {opp_data.get('title')}: {str(e)}")
+
+                        # Update progress
+                        progress_bar.progress((idx + 1) / len(all_opportunities))
+
+                    status_text.empty()
+                    progress_bar.empty()
+
+                    # Sort by compatibility score (highest first)
+                    batch_results.sort(key=lambda x: x['score'], reverse=True)
+
+                    # Display results
+                    st.success(f"✅ Batch evaluation complete! Evaluated {len(batch_results)} scholarships.")
+
+                    st.markdown("---")
+                    st.subheader("📊 Results - Best Matches First")
+
+                    # Summary metrics
+                    if batch_results:
+                        col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+
+                        high_matches = sum(1 for r in batch_results if r['score'] >= 0.7)
+                        medium_matches = sum(1 for r in batch_results if 0.4 <= r['score'] < 0.7)
+                        low_matches = sum(1 for r in batch_results if r['score'] < 0.4)
+                        avg_score = sum(r['score'] for r in batch_results) / len(batch_results)
+
+                        with col_m1:
+                            create_metric_card("Total Evaluated", str(len(batch_results)))
+                        with col_m2:
+                            create_metric_card("Strong Matches", f"{high_matches} (≥70%)", help_text="Compatibility ≥ 70%")
+                        with col_m3:
+                            create_metric_card("Moderate Matches", f"{medium_matches} (40-69%)", help_text="Compatibility 40-69%")
+                        with col_m4:
+                            create_metric_card("Average Score", f"{avg_score:.1%}")
+
+                    st.markdown("---")
+
+                    # Display each result
+                    for idx, item in enumerate(batch_results, 1):
+                        opportunity = item['opportunity']
+                        result = item['result']
+                        opp_data = item['opp_data']
+                        score = item['score']
+
+                        # Color-coded expander based on score
+                        if score >= 0.7:
+                            emoji = "🟢"
+                            label = "Strong Match"
+                        elif score >= 0.4:
+                            emoji = "🟡"
+                            label = "Moderate Match"
+                        else:
+                            emoji = "🔴"
+                            label = "Weak Match"
+
+                        with st.expander(f"{emoji} #{idx} - {opportunity.title} - **{score:.1%}** ({label})", expanded=(idx <= 3)):
+                            col_r1, col_r2 = st.columns([2, 1])
+
+                            with col_r1:
+                                st.markdown(f"**Type:** {opportunity.opp_type}")
+                                st.markdown(f"**Provider:** {opp_data.get('provider', 'N/A')}")
+                                st.markdown(f"**Deadline:** {opp_data.get('deadline', 'N/A')}")
+                                st.markdown(f"**Funding:** {opp_data.get('funding', 'N/A')}")
+
+                                with st.expander("📄 Full Description"):
+                                    st.write(opportunity.description)
+
+                                with st.expander("📋 Requirements"):
+                                    st.write(opportunity.requirements)
+
+                            with col_r2:
+                                st.markdown(f"### {score:.1%}")
+                                st.markdown(create_status_indicator(score), unsafe_allow_html=True)
+
+                            # Evaluation details
+                            st.markdown("**💪 Your Strengths:**")
+                            st.write(result.strengths)
+
+                            st.markdown("**⚠️ Gaps to Address:**")
+                            st.write(result.gaps)
+
+                            st.markdown("**💡 Recommendation:**")
+                            st.write(result.recommendation)
+
+                            # Action buttons
+                            col_a1, col_a2 = st.columns(2)
+                            with col_a1:
+                                if opp_data.get('link'):
+                                    st.markdown(f"[🔗 Apply Here]({opp_data.get('link')})")
+
+                            with col_a2:
+                                if st.button(f"✍️ Generate Materials", key=f"gen_mat_{idx}"):
+                                    st.session_state.selected_opportunity_for_materials = opportunity
+                                    st.session_state.selected_opportunity_data = opp_data
+                                    st.success("✅ Opportunity loaded! Go to 'Generate Materials' tab")
+                                    st.rerun()
+
 
 # TAB 3: History
 with tab3:
@@ -671,17 +902,21 @@ with tab4:
             Generating personalized materials for: <strong>{st.session_state.profile.name}</strong>
         </div>
         """, unsafe_allow_html=True)
-        
+
+        # Check if opportunity was selected from batch match
+        if st.session_state.selected_opportunity_for_materials:
+            st.success(f"✅ Loaded: {st.session_state.selected_opportunity_for_materials.title}")
+
         with st.form("material_generation_form"):
             col1, col2 = st.columns(2)
-            
+
             with col1:
                 material_type = st.selectbox(
                     "Material Type",
                     ["cover_letter", "personal_statement", "motivation_letter"],
                     format_func=lambda x: x.replace('_', ' ').title()
                 )
-                
+
                 target_words = st.slider(
                     "Target Word Count",
                     min_value=200,
@@ -689,11 +924,16 @@ with tab4:
                     value=500,
                     step=50
                 )
-            
+
             with col2:
                 # Use opportunity from history or enter new one
                 use_previous = False
-                if st.session_state.evaluation_history:
+                use_selected = False
+
+                if st.session_state.selected_opportunity_for_materials:
+                    use_selected = st.checkbox("Use selected opportunity", value=True)
+
+                if not use_selected and st.session_state.evaluation_history:
                     use_previous = st.checkbox("Use previous opportunity")
                     if use_previous:
                         selected_opp = st.selectbox(
@@ -701,9 +941,16 @@ with tab4:
                             range(len(st.session_state.evaluation_history)),
                             format_func=lambda x: st.session_state.evaluation_history[x]['opportunity'].title
                         )
-            
+
             # Opportunity details
-            if not use_previous:
+            if use_selected and st.session_state.selected_opportunity_for_materials:
+                st.subheader("Selected Opportunity")
+                st.write(f"**Title:** {st.session_state.selected_opportunity_for_materials.title}")
+                st.write(f"**Type:** {st.session_state.selected_opportunity_for_materials.opp_type}")
+                with st.expander("View Details"):
+                    st.write(st.session_state.selected_opportunity_for_materials.description)
+                    st.write(st.session_state.selected_opportunity_for_materials.requirements)
+            elif not use_previous:
                 st.subheader("Opportunity Details")
                 opp_title = st.text_input("Opportunity Title")
                 opp_type = st.selectbox("Type", ["Scholarship", "Job", "Academic Program", "Fellowship"])
@@ -714,13 +961,15 @@ with tab4:
             
             if generate_material:
                 # Get opportunity data
-                if use_previous and st.session_state.evaluation_history:
+                if use_selected and st.session_state.selected_opportunity_for_materials:
+                    opportunity = st.session_state.selected_opportunity_for_materials
+                elif use_previous and st.session_state.evaluation_history:
                     opportunity = st.session_state.evaluation_history[selected_opp]['opportunity']
                 else:
                     if not all([opp_title, opp_description, opp_requirements]):
                         st.error("Please fill all opportunity fields")
                         st.stop()
-                    
+
                     opportunity = Opportunity(
                         title=opp_title,
                         opp_type=opp_type,
@@ -800,45 +1049,109 @@ with tab4:
 # TAB 5: Document Upload and Analysis
 with tab5:
     st.header("Upload and Analyze Documents")
-    st.markdown("Upload images of your CV, transcripts, certificates, or other documents to extract information automatically.")
-    
+    st.markdown("Upload your CV (PDF or image) to automatically create your profile and match against scholarships.")
+
+    # Instructions
+    st.markdown("""
+    <div class="info-card">
+        <h4>📋 How it works:</h4>
+        <ol>
+            <li>Upload your CV as PDF or image (PNG/JPG)</li>
+            <li>AI extracts text and analyzes your profile</li>
+            <li>Click "Auto-fill Profile" to create your profile</li>
+            <li>Go to "Check Match" tab to batch match all scholarships</li>
+        </ol>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
     # File uploader
     uploaded_file = st.file_uploader(
-        "Choose a document image",
-        type=['png', 'jpg', 'jpeg'],
-        help="Upload clear, high-quality images for best results"
+        "Choose a document (image or PDF)",
+        type=['png', 'jpg', 'jpeg', 'pdf'],
+        help="Upload clear, high-quality images or PDF files for best results"
     )
     
     if uploaded_file is not None:
-        # Display the uploaded image
+        # Check if PDF or image
+        is_pdf = uploaded_file.name.lower().endswith('.pdf')
+
+        # Display the uploaded document
         col1, col2 = st.columns([1, 1])
-        
+
         with col1:
             st.subheader("📄 Uploaded Document")
-            st.image(uploaded_file, caption="Uploaded Document", use_container_width=True)
-            
+            if not is_pdf:
+                st.image(uploaded_file, caption="Uploaded Document", use_container_width=True)
+            else:
+                st.info(f"📄 PDF uploaded: {uploaded_file.name}")
+
             # Document type hint
             doc_type_hint = st.selectbox(
                 "Document Type (optional hint)",
                 ["Auto-detect", "CV/Resume", "Academic Transcript", "Certificate", "Cover Letter", "Other"]
             )
-            
+
             # Analyze button
             if st.button("🔍 Analyze Document", type="primary"):
-                
+
                 if not os.environ.get('OPENAI_API_KEY'):
                     st.error("OpenAI API key not found. Please check your configuration.")
                 else:
                     with st.spinner("🤖 Analyzing document... This may take 15-20 seconds."):
                         try:
-                            from image_analyzer import analyze_document_image, extract_profile_info_from_text
-                            
-                            # Read image bytes
-                            image_bytes = uploaded_file.getvalue()
-                            
-                            # Analyze the document
-                            doc_hint = None if doc_type_hint == "Auto-detect" else doc_type_hint
-                            analysis = analyze_document_image(image_bytes, doc_hint)
+                            # Handle PDF differently
+                            if is_pdf:
+                                import fitz  # PyMuPDF
+                                from io import BytesIO
+
+                                # Extract text from PDF
+                                pdf_bytes = uploaded_file.getvalue()
+                                pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
+
+                                extracted_text = ""
+                                for page_num in range(len(pdf_document)):
+                                    page = pdf_document[page_num]
+                                    extracted_text += page.get_text()
+
+                                # Create analysis object from extracted text
+                                from models import DocumentAnalysis
+                                from langchain_openai import ChatOpenAI
+
+                                llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+
+                                doc_hint = None if doc_type_hint == "Auto-detect" else doc_type_hint
+
+                                prompt = f"""Analyze this document text and provide structured information.
+
+Document text:
+{extracted_text}
+
+Document type hint: {doc_hint or 'None'}
+
+Provide:
+1. Document type (CV, transcript, certificate, etc.)
+2. Key information extracted (as a dictionary)
+3. Suggestions for the user
+4. Confidence score (0.0 to 1.0)
+
+Return as structured data."""
+
+                                analysis_result = llm.with_structured_output(DocumentAnalysis, method="function_calling").invoke(prompt)
+                                analysis_result.extracted_text = extracted_text
+                                analysis = analysis_result
+
+                            else:
+                                # Handle image
+                                from image_analyzer import analyze_document_image, extract_profile_info_from_text
+
+                                # Read image bytes
+                                image_bytes = uploaded_file.getvalue()
+
+                                # Analyze the document
+                                doc_hint = None if doc_type_hint == "Auto-detect" else doc_type_hint
+                                analysis = analyze_document_image(image_bytes, doc_hint)
                             
                             # Store analysis in session state for later use
                             st.session_state.document_analysis = analysis
@@ -944,7 +1257,15 @@ Rules:
                                                 
                                                 st.success("✅ Profile auto-filled from CV!")
                                                 st.balloons()
-                                                st.info("👉 Go to 'Your Profile' tab to review and edit the information")
+
+                                                col_action1, col_action2 = st.columns(2)
+                                                with col_action1:
+                                                    if st.button("📝 Review Profile", use_container_width=True):
+                                                        st.info("👉 Go to 'Your Profile' tab")
+                                                with col_action2:
+                                                    if st.button("🚀 Start Batch Match", type="primary", use_container_width=True):
+                                                        st.info("👉 Go to 'Check Match' tab")
+
                                                 st.rerun() 
                                                 
                                             except json.JSONDecodeError as e:

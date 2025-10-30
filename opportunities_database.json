@@ -1,4 +1,17 @@
+
 [
+  {
+    "title": "Gates Cambridge Scholarship",
+    "type": "Scholarship",
+    "description": "The Gates Cambridge Scholarship offers full-cost scholarships to outstanding applicants from countries outside the UK to pursue a full-time postgraduate degree at the University of Cambridge. It focuses on academic excellence, leadership potential, and a commitment to improving the lives of others.",
+    "requirements": "Applicants must be non-UK citizens applying for a full-time postgraduate degree at the University of Cambridge. Strong academic record, leadership ability, and a commitment to social improvement are essential.",
+    "deadline": "10-09-2025",
+    "provider": "University of Cambridge",
+    "funding": "Full tuition, stipend, travel, and visa costs",
+    "link": "https://www.gatescambridge.org/",
+    "saved_at": "2025-10-30T16:00:00",
+    "id": 2
+  },
   {
     "title": "Fulbright Foreign Student Program - Master's in Data Science",
     "type": "Scholarship",
@@ -10,5 +23,113 @@
     "link": "https://foreign.fulbrightonline.org/about/foreign-student-program",
     "saved_at": "2025-10-05T16:44:53.527602",
     "id": 1
+  },
+  {
+    "title": "Schwarzman Scholars Program",
+    "type": "Scholarship",
+    "description": "A fully-funded, one-year master's program at Tsinghua University in Beijing designed to prepare future global leaders. Students pursue studies in Global Affairs with concentrations in Public Policy, Economics, or International Studies.",
+    "requirements": "Bachelor’s degree or equivalent, strong leadership potential, English proficiency. Open to all nationalities under 29 years old at the time of enrollment.",
+    "deadline": "05-09-2025",
+    "provider": "Tsinghua University",
+    "funding": "Full tuition, room and board, in-country travel, stipend, and airfare",
+    "link": "https://www.schwarzmanscholars.org/",
+    "saved_at": "2025-10-30T16:00:00",
+    "id": 3
+  },
+  {
+    "title": "Chevening Scholarship",
+    "type": "Scholarship",
+    "description": "The UK Government’s global scholarship program offers fully funded one-year master’s degrees at any UK university for outstanding emerging leaders from around the world.",
+    "requirements": "Applicants must be citizens of Chevening-eligible countries, hold an undergraduate degree, and have at least two years of work experience. Return home for a minimum of two years after the award.",
+    "deadline": "11-07-2025",
+    "provider": "UK Foreign, Commonwealth & Development Office (FCDO)",
+    "funding": "Full tuition, living allowance, return flights, and visa fees",
+    "link": "https://www.chevening.org/",
+    "saved_at": "2025-10-30T16:00:00",
+    "id": 4
+  },
+  {
+    "title": "Erasmus Mundus Joint Master’s Scholarships",
+    "type": "Scholarship",
+    "description": "A prestigious, fully funded European Union program supporting international students to pursue joint master’s degrees offered by consortia of European universities in multiple countries.",
+    "requirements": "Applicants must hold a bachelor’s degree and apply to a selected Erasmus Mundus Joint Master’s program. Open to all nationalities.",
+    "deadline": "02-01-2026",
+    "provider": "European Commission",
+    "funding": "Full tuition, travel, installation allowance, and monthly stipend",
+    "link": "https://www.eacea.ec.europa.eu/scholarships/erasmus-mundus_en",
+    "saved_at": "2025-10-30T16:00:00",
+    "id": 5
+  },
+  {
+    "title": "DAAD Helmut Schmidt Programme – Public Policy and Good Governance",
+    "type": "Scholarship",
+    "description": "The DAAD Helmut Schmidt Programme offers full scholarships for master’s programs in public policy, governance, and development at German universities. It targets future leaders committed to social justice and good governance.",
+    "requirements": "Bachelor’s degree, proven experience in social/political engagement, and strong motivation for public service. Open to graduates from developing and transition countries.",
+    "deadline": "07-31-2025",
+    "provider": "DAAD (German Academic Exchange Service)",
+    "funding": "Full tuition, monthly stipend, travel allowance, and health insurance",
+    "link": "https://www.daad.de/en/study-and-research-in-germany/scholarships/helmut-schmidt-programme/",
+    "saved_at": "2025-10-30T16:00:00",
+    "id": 6
+  },
+  {
+    "title": "Knight-Hennessy Scholars Program",
+    "type": "Scholarship",
+    "description": "Knight-Hennessy Scholars is a fully funded graduate-level scholarship at Stanford University, supporting students from all disciplines who demonstrate leadership, innovation, and civic commitment.",
+    "requirements": "Applicants must apply to a full-time graduate program at Stanford and separately to the Knight-Hennessy Scholars program. All nationalities eligible.",
+    "deadline": "10-09-2025",
+    "provider": "Stanford University",
+    "funding": "Full tuition, living stipend, and travel allowance",
+    "link": "https://knight-hennessy.stanford.edu/",
+    "saved_at": "2025-10-30T16:00:00",
+    "id": 7
+  },
+  {
+    "title": "Aga Khan Foundation International Scholarship Programme",
+    "type": "Scholarship",
+    "description": "The Aga Khan Foundation provides limited numbers of scholarships each year for postgraduate studies to outstanding students from developing countries who have no other means of financing their education.",
+    "requirements": "Excellent academic record, genuine financial need, and admission to a reputable postgraduate program. Preference for students under 30 years old.",
+    "deadline": "03-31-2026",
+    "provider": "Aga Khan Foundation",
+    "funding": "50% grant and 50% loan for tuition and living expenses",
+    "link": "https://www.akdn.org/our-agencies/aga-khan-foundation/international-scholarship-programme",
+    "saved_at": "2025-10-30T16:00:00",
+    "id": 8
+  },
+  {
+    "title": "Rotary Peace Fellowship",
+    "type": "Fellowship",
+    "description": "The Rotary Peace Fellowship funds master’s degree programs related to peace and development at leading universities worldwide. Fellows develop practical skills to promote peace and resolve conflict globally.",
+    "requirements": "Bachelor’s degree, minimum three years of relevant work experience, and a strong commitment to peace and international understanding.",
+    "deadline": "05-15-2026",
+    "provider": "Rotary International",
+    "funding": "Full tuition, room and board, transportation, and internship expenses",
+    "link": "https://www.rotary.org/en/our-programs/peace-fellowships",
+    "saved_at": "2025-10-30T16:00:00",
+    "id": 9
+  },
+  {
+    "title": "Swedish Institute Scholarships for Global Professionals (SISGP)",
+    "type": "Scholarship",
+    "description": "The Swedish Institute offers full scholarships for global professionals to study master’s programs in Sweden. It targets future leaders contributing to sustainable development in their home countries.",
+    "requirements": "Applicants must be from eligible countries, have work experience, and demonstrate leadership and motivation for sustainable development.",
+    "deadline": "02-28-2026",
+    "provider": "Swedish Institute",
+    "funding": "Full tuition, living expenses, insurance, and travel grant",
+    "link": "https://si.se/en/apply/scholarships/swedish-institute-scholarships-for-global-professionals/",
+    "saved_at": "2025-10-30T16:00:00",
+    "id": 10
+  },
+  {
+    "title": "Clarendon Fund Scholarship – University of Oxford",
+    "type": "Scholarship",
+    "description": "The Clarendon Fund offers over 150 full scholarships annually for graduate students at the University of Oxford. It covers any subject area and recognizes academic excellence and leadership potential.",
+    "requirements": "Apply for a graduate degree at Oxford by the relevant January deadline. Selection is based on academic merit and potential.",
+    "deadline": "01-22-2026",
+    "provider": "University of Oxford",
+    "funding": "Full tuition and generous living allowance",
+    "link": "https://www.ox.ac.uk/clarendon",
+    "saved_at": "2025-10-30T16:00:00",
+    "id": 11
   }
 ]
