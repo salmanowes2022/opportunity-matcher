@@ -94,114 +94,284 @@ with tab1:
     st.markdown("Fill out your information once, then use it to evaluate multiple opportunities.")
 
     # Quick action buttons
-    col_btn1, col_btn2, col_btn3 = st.columns(3)
-    with col_btn1:
-        if st.button("📄 Upload CV to Auto-fill", use_container_width=True, type="secondary"):
-            st.session_state.active_tab = "tab5"
-            st.info("👉 Go to 'Upload Documents' tab to upload your CV")
-    with col_btn2:
-        if st.button("🚀 Load Demo Profile", use_container_width=True, help="Quick load a sample profile for testing"):
-            demo_profile = UserProfile(
-                name="Sarah Ahmed",
-                education_level="Master's",
-                field_of_study="Computer Science",
-                gpa=3.8,
-                skills="Python, Machine Learning, Data Analysis, Natural Language Processing, Research, Technical Writing, Problem Solving",
-                experience_years=3,
-                languages="English, Arabic, French",
-                achievements="Published 2 research papers on AI ethics, Won university hackathon 2023, Teaching Assistant for 2 years, Google Summer of Code participant, Dean's List all semesters",
-                goals="Seeking PhD opportunities in AI research, particularly interested in ethical AI and NLP applications. Looking to contribute to cutting-edge research while developing teaching experience."
-            )
-            st.session_state.profile = demo_profile
-            st.success("✅ Demo profile loaded! Scroll down to see details.")
-            st.rerun()
-    with col_btn3:
-        if st.session_state.profile and st.button("🎯 Go to Batch Match", use_container_width=True, type="primary"):
-            st.info("👉 Go to 'Check Match' tab and scroll to Batch Match section")
+    # Check if CV data is available in session state
+    has_cv_data = 'document_analysis' in st.session_state and st.session_state.document_analysis
+
+    if has_cv_data and not st.session_state.profile:
+        # Show auto-create button when CV is uploaded but no profile exists
+        col_btn1, col_btn2 = st.columns(2)
+        with col_btn1:
+            if st.button("⚡ Auto-Create Profile from CV", use_container_width=True, type="primary", help="Automatically create your profile from uploaded CV"):
+                cv_data = st.session_state.document_analysis
+                with st.spinner("Creating profile from CV..."):
+                    try:
+                        from langchain_openai import ChatOpenAI
+                        import json
+
+                        llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+
+                        prompt = f"""Extract profile information from this CV/Resume text and return ONLY a valid JSON object.
+
+CV Text:
+{cv_data.extracted_text}
+
+Return this exact JSON structure (no extra text, no markdown):
+{{
+    "name": "extracted full name",
+    "education_level": "Bachelor's" or "Master's" or "PhD" or "High School",
+    "field_of_study": "major/field extracted from education section",
+    "gpa": 3.5 or null if not mentioned,
+    "skills": "comma separated list of all technical and soft skills",
+    "experience_years": total years of work experience as integer,
+    "languages": "comma separated languages spoken",
+    "achievements": "key achievements, awards, publications, certifications",
+    "goals": "inferred career goals based on CV content and trajectory"
+}}
+
+Rules:
+- Use exact values from CV where possible
+- If information is missing, use null or reasonable default
+- Keep it concise and accurate
+- Return ONLY the JSON, no other text"""
+
+                        response = llm.invoke(prompt)
+                        content = response.content.strip()
+
+                        # Clean up if it has markdown code blocks
+                        if content.startswith("```json"):
+                            content = content[7:]
+                        elif content.startswith("```"):
+                            content = content[3:]
+                        if content.endswith("```"):
+                            content = content[:-3]
+                        content = content.strip()
+
+                        profile_data = json.loads(content)
+
+                        # Create profile directly
+                        st.session_state.profile = UserProfile(
+                            name=profile_data.get('name', 'From CV'),
+                            education_level=profile_data.get('education_level', 'Bachelor\'s'),
+                            field_of_study=profile_data.get('field_of_study', 'Not specified'),
+                            gpa=profile_data.get('gpa'),
+                            skills=profile_data.get('skills', 'Not specified'),
+                            experience_years=profile_data.get('experience_years', 0),
+                            languages=profile_data.get('languages', 'English'),
+                            achievements=profile_data.get('achievements', 'See CV for details'),
+                            goals=profile_data.get('goals', 'See CV for details')
+                        )
+                        st.success("✅ Profile created from CV!")
+                        st.balloons()
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error creating profile: {str(e)}")
+        with col_btn2:
+            if st.button("📝 Create Manually Instead", use_container_width=True, type="secondary"):
+                st.info("Scroll down to fill the form manually")
+    else:
+        # Original buttons layout
+        col_btn1, col_btn2, col_btn3 = st.columns(3)
+        with col_btn1:
+            if st.button("📄 Upload CV to Auto-fill", use_container_width=True, type="secondary"):
+                st.session_state.active_tab = "tab5"
+                st.info("👉 Go to 'Upload Documents' tab to upload your CV")
+        with col_btn2:
+            if st.button("🚀 Load Demo Profile", use_container_width=True, help="Quick load a sample profile for testing"):
+                demo_profile = UserProfile(
+                    name="Sarah Ahmed",
+                    education_level="Master's",
+                    field_of_study="Computer Science",
+                    gpa=3.8,
+                    skills="Python, Machine Learning, Data Analysis, Natural Language Processing, Research, Technical Writing, Problem Solving",
+                    experience_years=3,
+                    languages="English, Arabic, French",
+                    achievements="Published 2 research papers on AI ethics, Won university hackathon 2023, Teaching Assistant for 2 years, Google Summer of Code participant, Dean's List all semesters",
+                    goals="Seeking PhD opportunities in AI research, particularly interested in ethical AI and NLP applications. Looking to contribute to cutting-edge research while developing teaching experience."
+                )
+                st.session_state.profile = demo_profile
+                st.success("✅ Demo profile loaded! Scroll down to see details.")
+                st.rerun()
+        with col_btn3:
+            if st.session_state.profile and st.button("🎯 Go to Batch Match", use_container_width=True, type="primary"):
+                st.info("👉 Go to 'Check Match' tab and scroll to Batch Match section")
 
     st.markdown("---")
 
-    with st.form("profile_form"):
-        # Basic Information
-        st.subheader("Basic Information")
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            name = st.text_input("Full Name*", help="Your full name")
-            education = st.selectbox(
-                "Education Level*",
-                ["High School", "Bachelor's", "Master's", "PhD", "Other"],
-                help="Your highest completed or current education level"
-            )
-            field = st.text_input(
-                "Field of Study*",
-                help="Your major, specialization, or field of expertise"
-            )
-        
-        with col2:
-            gpa = st.number_input(
-                "GPA (optional)",
-                min_value=0.0,
-                max_value=4.0,
-                step=0.1,
-                help="Your GPA on a 4.0 scale (leave 0 if not applicable)"
-            )
-            experience = st.number_input(
-                "Years of Experience*",
-                min_value=0,
-                max_value=50,
-                value=0,
-                help="Years of relevant work or research experience"
-            )
-            languages = st.text_input(
-                "Languages*",
-                placeholder="English, Arabic, Spanish",
-                help="Languages you speak (comma separated)"
-            )
-        
-        # Skills and Experience
-        st.subheader("Skills & Experience")
-        skills = st.text_area(
-            "Skills*",
-            placeholder="Python, Data Analysis, Research, Project Management, etc.",
-            help="Your technical and soft skills (comma separated)"
-        )
-        
-        achievements = st.text_area(
-            "Key Achievements*",
-            placeholder="Awards, publications, certifications, notable projects, leadership roles...",
-            help="Your most significant accomplishments"
-        )
-        
-        goals = st.text_area(
-            "Your Goals*",
-            placeholder="What are you looking for? Career change? Further education? Research opportunities?",
-            help="Describe what you're hoping to achieve"
-        )
-        
-        # Submit button
-        submitted = st.form_submit_button("💾 Save Profile", use_container_width=True)
-        
-        if submitted:
-            # Validation
-            required_fields = [name, field, skills, languages, achievements, goals]
-            if not all(required_fields):
-                st.error("Please fill all required fields marked with *")
-            else:
-                # Create and save profile
-                st.session_state.profile = UserProfile(
-                    name=name,
-                    education_level=education,
-                    field_of_study=field,
-                    gpa=gpa if gpa > 0 else None,
-                    skills=skills,
-                    experience_years=experience,
-                    languages=languages,
-                    achievements=achievements,
-                    goals=goals
+    # Show manual form in expander if profile already exists, otherwise show it normally
+    if not st.session_state.profile:
+        # Show form normally when no profile exists
+        with st.form("profile_form"):
+            # Basic Information
+            st.subheader("Basic Information")
+            col1, col2 = st.columns(2)
+
+            with col1:
+                name = st.text_input("Full Name*", help="Your full name")
+                education = st.selectbox(
+                    "Education Level*",
+                    ["High School", "Bachelor's", "Master's", "PhD", "Other"],
+                    help="Your highest completed or current education level"
                 )
-                st.success(f"✅ Profile saved successfully for {name}!")
-                st.rerun()
+                field = st.text_input(
+                    "Field of Study*",
+                    help="Your major, specialization, or field of expertise"
+                )
+
+            with col2:
+                gpa = st.number_input(
+                    "GPA (optional)",
+                    min_value=0.0,
+                    max_value=4.0,
+                    step=0.1,
+                    help="Your GPA on a 4.0 scale (leave 0 if not applicable)"
+                )
+                experience = st.number_input(
+                    "Years of Experience*",
+                    min_value=0,
+                    max_value=50,
+                    value=0,
+                    help="Years of relevant work or research experience"
+                )
+                languages = st.text_input(
+                    "Languages*",
+                    placeholder="English, Arabic, Spanish",
+                    help="Languages you speak (comma separated)"
+                )
+
+            # Skills and Experience
+            st.subheader("Skills & Experience")
+            skills = st.text_area(
+                "Skills*",
+                placeholder="Python, Data Analysis, Research, Project Management, etc.",
+                help="Your technical and soft skills (comma separated)"
+            )
+
+            achievements = st.text_area(
+                "Key Achievements*",
+                placeholder="Awards, publications, certifications, notable projects, leadership roles...",
+                help="Your most significant accomplishments"
+            )
+
+            goals = st.text_area(
+                "Your Goals*",
+                placeholder="What are you looking for? Career change? Further education? Research opportunities?",
+                help="Describe what you're hoping to achieve"
+            )
+
+            # Submit button
+            submitted = st.form_submit_button("💾 Save Profile", use_container_width=True)
+
+            if submitted:
+                # Validation
+                required_fields = [name, field, skills, languages, achievements, goals]
+                if not all(required_fields):
+                    st.error("Please fill all required fields marked with *")
+                else:
+                    # Create and save profile
+                    st.session_state.profile = UserProfile(
+                        name=name,
+                        education_level=education,
+                        field_of_study=field,
+                        gpa=gpa if gpa > 0 else None,
+                        skills=skills,
+                        experience_years=experience,
+                        languages=languages,
+                        achievements=achievements,
+                        goals=goals
+                    )
+                    st.success(f"✅ Profile saved successfully for {name}!")
+                    st.rerun()
+    else:
+        # Hide form when profile exists, show in collapsed expander
+        with st.expander("📝 Edit Profile Manually (Optional)", expanded=False):
+            with st.form("profile_form_edit"):
+                # Basic Information
+                st.subheader("Basic Information")
+                col1, col2 = st.columns(2)
+
+                with col1:
+                    name = st.text_input("Full Name*", value=st.session_state.profile.name, help="Your full name")
+                    education = st.selectbox(
+                        "Education Level*",
+                        ["High School", "Bachelor's", "Master's", "PhD", "Other"],
+                        index=["High School", "Bachelor's", "Master's", "PhD", "Other"].index(st.session_state.profile.education_level) if st.session_state.profile.education_level in ["High School", "Bachelor's", "Master's", "PhD", "Other"] else 1,
+                        help="Your highest completed or current education level"
+                    )
+                    field = st.text_input(
+                        "Field of Study*",
+                        value=st.session_state.profile.field_of_study,
+                        help="Your major, specialization, or field of expertise"
+                    )
+
+                with col2:
+                    gpa = st.number_input(
+                        "GPA (optional)",
+                        min_value=0.0,
+                        max_value=4.0,
+                        step=0.1,
+                        value=float(st.session_state.profile.gpa or 0),
+                        help="Your GPA on a 4.0 scale (leave 0 if not applicable)"
+                    )
+                    experience = st.number_input(
+                        "Years of Experience*",
+                        min_value=0,
+                        max_value=50,
+                        value=st.session_state.profile.experience_years,
+                        help="Years of relevant work or research experience"
+                    )
+                    languages = st.text_input(
+                        "Languages*",
+                        value=st.session_state.profile.languages,
+                        placeholder="English, Arabic, Spanish",
+                        help="Languages you speak (comma separated)"
+                    )
+
+                # Skills and Experience
+                st.subheader("Skills & Experience")
+                skills = st.text_area(
+                    "Skills*",
+                    value=st.session_state.profile.skills,
+                    placeholder="Python, Data Analysis, Research, Project Management, etc.",
+                    help="Your technical and soft skills (comma separated)"
+                )
+
+                achievements = st.text_area(
+                    "Key Achievements*",
+                    value=st.session_state.profile.achievements,
+                    placeholder="Awards, publications, certifications, notable projects, leadership roles...",
+                    help="Your most significant accomplishments"
+                )
+
+                goals = st.text_area(
+                    "Your Goals*",
+                    value=st.session_state.profile.goals,
+                    placeholder="What are you looking for? Career change? Further education? Research opportunities?",
+                    help="Describe what you're hoping to achieve"
+                )
+
+                # Submit button
+                submitted = st.form_submit_button("💾 Update Profile", use_container_width=True)
+
+                if submitted:
+                    # Validation
+                    required_fields = [name, field, skills, languages, achievements, goals]
+                    if not all(required_fields):
+                        st.error("Please fill all required fields marked with *")
+                    else:
+                        # Update profile
+                        st.session_state.profile = UserProfile(
+                            name=name,
+                            education_level=education,
+                            field_of_study=field,
+                            gpa=gpa if gpa > 0 else None,
+                            skills=skills,
+                            experience_years=experience,
+                            languages=languages,
+                            achievements=achievements,
+                            goals=goals
+                        )
+                        st.success(f"✅ Profile updated successfully!")
+                        st.rerun()
 
     # Display saved profile with enhanced styling
     if st.session_state.profile:
@@ -651,7 +821,150 @@ with tab2:
                         except Exception as e:
                             st.error(f"❌ API Test Failed: {str(e)}")
 
+        # SPECIFIC SCHOLARSHIP MATCHING
+        st.divider()
+        st.header("🎯 Match with Specific Scholarship")
+        st.markdown("Select a specific scholarship from the database to evaluate your match.")
+
+        # Load all opportunities for selection
+        from opportunities_storage import load_all_opportunities
+        all_opps_for_selection = load_all_opportunities()
+
+        if all_opps_for_selection:
+            # Create a selectbox with scholarship titles
+            scholarship_titles = [f"{opp.get('title', 'Untitled')} - {opp.get('provider', 'N/A')}" for opp in all_opps_for_selection]
+
+            selected_scholarship_idx = st.selectbox(
+                "Choose a scholarship to evaluate:",
+                range(len(scholarship_titles)),
+                format_func=lambda i: scholarship_titles[i],
+                help="Select a scholarship from the database"
+            )
+
+            col_spec1, col_spec2 = st.columns([2, 1])
+            with col_spec1:
+                selected_opp_data = all_opps_for_selection[selected_scholarship_idx]
+                st.markdown(f"""
+                **Type:** {selected_opp_data.get('type', 'Scholarship')}
+                **Provider:** {selected_opp_data.get('provider', 'N/A')}
+                **Deadline:** {selected_opp_data.get('deadline', 'N/A')}
+                **Funding:** {selected_opp_data.get('funding', 'N/A')}
+                """)
+
+                with st.expander("📄 View Full Details"):
+                    st.write(f"**Description:** {selected_opp_data.get('description', 'N/A')}")
+                    st.write(f"**Requirements:** {selected_opp_data.get('requirements', 'N/A')}")
+                    if selected_opp_data.get('link'):
+                        st.markdown(f"[🔗 Application Link]({selected_opp_data.get('link')})")
+
+            with col_spec2:
+                if st.button("🔍 Evaluate This Scholarship", type="primary", use_container_width=True, key="eval_specific"):
+                    with st.spinner("Evaluating match..."):
+                        try:
+                            # Create Opportunity object
+                            opportunity = Opportunity(
+                                title=selected_opp_data.get('title', ''),
+                                opp_type=selected_opp_data.get('type', 'Scholarship'),
+                                description=selected_opp_data.get('description', ''),
+                                requirements=selected_opp_data.get('requirements', ''),
+                                deadline=selected_opp_data.get('deadline')
+                            )
+
+                            # Evaluate match
+                            from ai_evaluator import evaluate_match
+                            result = evaluate_match(st.session_state.profile, opportunity)
+
+                            # Display detailed evaluation
+                            st.success(f"✅ Evaluation Complete!")
+                            st.markdown("---")
+
+                            # Score display
+                            col_s1, col_s2 = st.columns([1, 2])
+                            with col_s1:
+                                st.markdown(f"### {result.compatibility_score:.1%}")
+                                st.markdown(create_status_indicator(result.compatibility_score), unsafe_allow_html=True)
+
+                            with col_s2:
+                                if result.compatibility_score >= 0.7:
+                                    st.markdown("""
+                                    <div class="success-card">
+                                        <strong>🟢 Strong Match!</strong><br>
+                                        You are a great fit for this opportunity.
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                                elif result.compatibility_score >= 0.4:
+                                    st.markdown("""
+                                    <div class="warning-card">
+                                        <strong>🟡 Moderate Match</strong><br>
+                                        You have potential but may need to address some gaps.
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                                else:
+                                    st.markdown("""
+                                    <div class="warning-card">
+                                        <strong>🔴 Weak Match</strong><br>
+                                        This may not be the best fit for your profile.
+                                    </div>
+                                    """, unsafe_allow_html=True)
+
+                            st.markdown("---")
+
+                            # Detailed results
+                            col_res1, col_res2 = st.columns(2)
+
+                            with col_res1:
+                                st.markdown("### 💪 Your Strengths")
+                                st.write(result.strengths)
+
+                                st.markdown("### 💡 Recommendation")
+                                st.write(result.recommendation)
+
+                            with col_res2:
+                                st.markdown("### ⚠️ Gaps to Address")
+                                st.write(result.gaps)
+
+                                st.markdown("### 📝 Next Steps")
+                                if result.compatibility_score >= 0.6:
+                                    st.write("✅ Start preparing your application materials")
+                                    st.write("✅ Address the gaps mentioned above")
+                                    st.write("✅ Research the organization/program further")
+                                else:
+                                    st.write("📚 Consider strengthening your profile in identified areas")
+                                    st.write("🔍 Look for opportunities that better match your profile")
+
+                            # Action buttons
+                            st.markdown("---")
+                            col_act1, col_act2, col_act3 = st.columns(3)
+
+                            with col_act1:
+                                if selected_opp_data.get('link'):
+                                    st.markdown(f"[🔗 Apply Now]({selected_opp_data.get('link')})")
+
+                            with col_act2:
+                                if st.button("✍️ Generate Application Materials", use_container_width=True, key="gen_mat_specific"):
+                                    st.session_state.selected_opportunity_for_materials = opportunity
+                                    st.session_state.selected_opportunity_data = selected_opp_data
+                                    st.info("👉 Go to 'Generate Materials' tab")
+
+                            with col_act3:
+                                # Save to history
+                                evaluation_record = {
+                                    "timestamp": datetime.now().isoformat(),
+                                    "opportunity_title": opportunity.title,
+                                    "opportunity_type": opportunity.opp_type,
+                                    "score": result.compatibility_score,
+                                    "result": result
+                                }
+                                st.session_state.evaluation_history.append(evaluation_record)
+                                st.success("💾 Saved to history")
+
+                        except Exception as e:
+                            st.error(f"Error evaluating scholarship: {str(e)}")
+        else:
+            st.warning("⚠️ No scholarships found in database. Add scholarships first in the 'Opportunity Database' tab.")
+
         # BATCH MATCHING SECTION - Match against all scholarships in database
+        st.divider()
         st.divider()
         st.header("🎯 Batch Match - Evaluate All Scholarships")
         st.markdown("Automatically evaluate your profile against **all scholarships** in the database and find your best matches!")
