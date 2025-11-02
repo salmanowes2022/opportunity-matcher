@@ -68,7 +68,17 @@ if api_errors:
 
 # Initialize session state
 if 'profile' not in st.session_state:
-    st.session_state.profile = None
+    # Try to load profile from file
+    import pickle
+    import os
+    if os.path.exists("user_profile.pkl"):
+        try:
+            with open("user_profile.pkl", "rb") as f:
+                st.session_state.profile = pickle.load(f)
+        except:
+            st.session_state.profile = None
+    else:
+        st.session_state.profile = None
 if 'evaluation_history' not in st.session_state:
     # Try to load from file
     import pickle
@@ -290,6 +300,15 @@ Rules:
                         achievements=achievements,
                         goals=goals
                     )
+
+                    # Save to local file
+                    import pickle
+                    try:
+                        with open("user_profile.pkl", "wb") as f:
+                            pickle.dump(st.session_state.profile, f)
+                    except:
+                        pass
+
                     st.success(f"✅ Profile saved successfully for {name}!")
                     st.rerun()
     else:
@@ -381,6 +400,15 @@ Rules:
                             achievements=achievements,
                             goals=goals
                         )
+
+                        # Save to local file
+                        import pickle
+                        try:
+                            with open("user_profile.pkl", "wb") as f:
+                                pickle.dump(st.session_state.profile, f)
+                        except:
+                            pass
+
                         st.success(f"✅ Profile updated successfully!")
                         st.rerun()
 
@@ -2233,10 +2261,10 @@ Return ONLY the JSON object, nothing else."""
             - Search by keywords in the title
             """)
 
-# TAB 7: AI Strategy - Multi-Agent AI System
+# TAB 7: AI Strategy - Comprehensive Career Assistant
 with tab7:
-    st.header("🤖 AI Strategy & Intelligence")
-    st.markdown("Harness the power of multiple AI agents working together to optimize your profile and application strategy.")
+    st.header("🤖 AI Career Strategy Assistant")
+    st.markdown("Your personal AI advisor for roadmaps, timelines, tips, and strategic planning.")
 
     if not st.session_state.profile:
         st.markdown("""
@@ -2248,39 +2276,631 @@ with tab7:
     else:
         st.markdown(f"""
         <div class="success-card">
-            <strong>✅ Profile Loaded</strong><br>
-            Ready to analyze: <strong>{st.session_state.profile.name}</strong>
+            <strong>✅ AI Assistant Ready</strong><br>
+            Personalized guidance for: <strong>{st.session_state.profile.name}</strong>
         </div>
         """, unsafe_allow_html=True)
 
+        # Progress Dashboard
+        st.markdown("---")
+        st.subheader("📊 Your Progress Dashboard")
+
+        col_dash1, col_dash2, col_dash3, col_dash4 = st.columns(4)
+
+        with col_dash1:
+            create_metric_card("Profile Score", f"{len(st.session_state.profile.skills.split(',')) * 10}%")
+
+        with col_dash2:
+            matched_count = len(st.session_state.evaluation_history)
+            create_metric_card("Opportunities Matched", matched_count)
+
+        with col_dash3:
+            if st.session_state.evaluation_history:
+                avg_match = sum(r.get('score', 0) for r in st.session_state.evaluation_history) / len(st.session_state.evaluation_history)
+                create_metric_card("Avg Match Score", f"{avg_match:.0%}")
+            else:
+                create_metric_card("Avg Match Score", "0%")
+
+        with col_dash4:
+            strong_matches = sum(1 for r in st.session_state.evaluation_history if r.get('score', 0) >= 0.7)
+            create_metric_card("Strong Matches", strong_matches)
+
+        # Quick actions
+        st.markdown("### 🚀 Quick Actions")
+        col_act1, col_act2, col_act3 = st.columns(3)
+
+        with col_act1:
+            if st.button("📝 Update Profile", use_container_width=True):
+                st.info("👉 Go to 'Your Profile' tab to update your information")
+
+        with col_act2:
+            if st.button("🔍 Find Opportunities", use_container_width=True):
+                st.info("👉 Go to 'Opportunity Database' to browse and add opportunities")
+
+        with col_act3:
+            if st.button("📊 View History", use_container_width=True):
+                st.info("👉 Go to 'History' tab to see all evaluations")
+
         st.markdown("---")
 
-        # Explanation of Multi-Agent System
-        with st.expander("📖 How the Multi-Agent AI System Works"):
+        # Create sub-tabs for different AI features
+        ai_tab1, ai_tab2, ai_tab3, ai_tab4, ai_tab5, ai_tab6 = st.tabs([
+            "🗺️ Roadmap",
+            "📅 Timeline",
+            "💡 Tips & Advice",
+            "🎯 Profile Analysis",
+            "📊 Success Strategy",
+            "🤖 Ask AI"
+        ])
+
+        # TAB 1: Career Roadmap
+        with ai_tab1:
+            st.subheader("🗺️ Personalized Career Roadmap")
+            st.markdown("Get a step-by-step roadmap tailored to your goals and background.")
+
+            if st.button("🚀 Generate My Roadmap", use_container_width=True, type="primary"):
+                with st.spinner("Creating your personalized roadmap..."):
+                    try:
+                        from langchain_openai import ChatOpenAI
+                        llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7)
+
+                        prompt = f"""Create a detailed career roadmap for this person:
+
+Name: {st.session_state.profile.name}
+Education: {st.session_state.profile.education_level} in {st.session_state.profile.field_of_study}
+Experience: {st.session_state.profile.experience_years} years
+Skills: {st.session_state.profile.skills}
+Goals: {st.session_state.profile.goals}
+
+Provide:
+1. Short-term goals (3-6 months)
+2. Medium-term goals (6-12 months)
+3. Long-term goals (1-3 years)
+4. Key milestones to track progress
+5. Skills to develop at each stage
+6. Potential obstacles and solutions
+
+Format as clear, actionable roadmap."""
+
+                        result = llm.invoke(prompt)
+
+                        st.markdown("### 🎯 Your Personalized Roadmap")
+                        st.write(result.content)
+
+                        # Get YouTube video recommendations with real searches
+                        st.markdown("---")
+                        st.markdown("### 📺 Recommended YouTube Videos")
+
+                        video_prompt = f"""Based on this career roadmap for {st.session_state.profile.field_of_study}, suggest 5 relevant YouTube search queries. Format EXACTLY as:
+1. Topic title | search terms
+2. Topic title | search terms
+
+Keep search terms simple and effective."""
+
+                        video_result = llm.invoke(video_prompt)
+
+                        # Parse and create clickable YouTube links
+                        import re
+                        lines = video_result.content.strip().split('\n')
+
+                        for line in lines:
+                            if '|' in line:
+                                parts = line.split('|', 1)
+                                if len(parts) == 2:
+                                    topic = parts[0].strip()
+                                    search_query = parts[1].strip()
+                                    # Create YouTube search URL
+                                    import urllib.parse
+                                    encoded_query = urllib.parse.quote(search_query)
+                                    youtube_url = f"https://www.youtube.com/results?search_query={encoded_query}"
+
+                                    st.markdown(f"**{topic}**")
+                                    st.markdown(f"🔗 [Watch on YouTube]({youtube_url})")
+                                    st.divider()
+
+                        # Download option
+                        full_content = f"{result.content}\n\n---\nRECOMMENDED VIDEOS:\n{video_result.content}"
+                        st.download_button(
+                            label="📥 Download Roadmap + Videos",
+                            data=full_content,
+                            file_name="career_roadmap_with_resources.txt",
+                            mime="text/plain"
+                        )
+
+                    except Exception as e:
+                        st.error(f"Error generating roadmap: {str(e)}")
+
+        # TAB 2: Application Timeline
+        with ai_tab2:
+            st.subheader("📅 Application Timeline Planner")
+            st.markdown("Create a timeline for your applications with deadlines and preparation tasks.")
+
+            # Get matched opportunities
+            if st.session_state.evaluation_history:
+                st.info(f"📊 Found {len(st.session_state.evaluation_history)} matched opportunities to plan for.")
+
+                if st.button("📅 Create Timeline", use_container_width=True, type="primary"):
+                    with st.spinner("Building your timeline..."):
+                        try:
+                            from langchain_openai import ChatOpenAI
+                            llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.5)
+
+                            # Prepare opportunity list
+                            opp_list = ""
+                            for idx, record in enumerate(st.session_state.evaluation_history[:10], 1):
+                                opp = record.get('opportunity')
+                                if opp:
+                                    deadline = getattr(opp, 'deadline', 'No deadline')
+                                    opp_list += f"{idx}. {opp.title} - Deadline: {deadline}\n"
+
+                            prompt = f"""Create a detailed application timeline for:
+
+Profile: {st.session_state.profile.name}
+Field: {st.session_state.profile.field_of_study}
+
+Opportunities to apply for:
+{opp_list}
+
+Create a week-by-week timeline including:
+1. When to start preparing each application
+2. Document preparation deadlines
+3. Review and revision time
+4. Submission dates
+5. Follow-up actions
+
+Consider typical preparation time for each application type.
+Format as clear weekly timeline."""
+
+                            result = llm.invoke(prompt)
+
+                            st.markdown("### 📅 Your Application Timeline")
+                            st.write(result.content)
+
+                            # Add YouTube resources with links
+                            st.markdown("---")
+                            st.markdown("### 📺 Time Management & Organization Videos")
+
+                            video_prompt = """Suggest 5 YouTube videos about application time management. Format EXACTLY as:
+1. Topic | search query
+2. Topic | search query
+Keep it focused on productivity and deadlines."""
+
+                            video_result = llm.invoke(video_prompt)
+
+                            # Create clickable links
+                            import urllib.parse
+                            lines = video_result.content.strip().split('\n')
+                            for line in lines:
+                                if '|' in line:
+                                    parts = line.split('|', 1)
+                                    if len(parts) == 2:
+                                        topic = parts[0].strip()
+                                        query = parts[1].strip()
+                                        url = f"https://www.youtube.com/results?search_query={urllib.parse.quote(query)}"
+                                        st.markdown(f"**{topic}**")
+                                        st.markdown(f"🔗 [Watch on YouTube]({url})")
+                                        st.divider()
+
+                            # Add visual timeline
+                            st.markdown("---")
+                            st.markdown("### 📊 Timeline Visualization Tips")
+                            st.info("""
+💡 **Pro Tips:**
+- Use Google Calendar to set reminders for each deadline
+- Create a Notion or Trello board to track application stages
+- Set up weekly review sessions to check progress
+- Build in 2-week buffers before deadlines
+                            """)
+
+                            full_content = f"{result.content}\n\n---\nRESOURCES:\n{video_result.content}"
+                            st.download_button(
+                                label="📥 Download Timeline + Resources",
+                                data=full_content,
+                                file_name="application_timeline_with_tips.txt",
+                                mime="text/plain"
+                            )
+
+                        except Exception as e:
+                            st.error(f"Error creating timeline: {str(e)}")
+            else:
+                st.warning("⚠️ No matched opportunities yet. Go to 'Check Match' to evaluate opportunities first!")
+
+        # TAB 3: Tips & Advice
+        with ai_tab3:
+            st.subheader("💡 Personalized Tips & Advice")
+            st.markdown("Get expert tips tailored to your profile and goals.")
+
+            advice_type = st.selectbox(
+                "What advice do you need?",
+                [
+                    "General Application Tips",
+                    "Profile Improvement",
+                    "Interview Preparation",
+                    "Networking Strategies",
+                    "Statement Writing",
+                    "CV/Resume Enhancement",
+                    "Time Management",
+                    "Skill Development"
+                ]
+            )
+
+            if st.button("💡 Get Advice", use_container_width=True, type="primary"):
+                with st.spinner("Generating personalized advice..."):
+                    try:
+                        from langchain_openai import ChatOpenAI
+                        llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7)
+
+                        prompt = f"""Provide expert advice on: {advice_type}
+
+For this profile:
+- Name: {st.session_state.profile.name}
+- Education: {st.session_state.profile.education_level} in {st.session_state.profile.field_of_study}
+- Experience: {st.session_state.profile.experience_years} years
+- Skills: {st.session_state.profile.skills}
+- Goals: {st.session_state.profile.goals}
+
+Provide:
+1. 5-7 specific, actionable tips
+2. Real-world examples
+3. Common mistakes to avoid
+4. Resources to explore
+5. Quick wins (easy improvements with high impact)
+
+Make it practical and immediately actionable."""
+
+                        result = llm.invoke(prompt)
+
+                        st.markdown(f"### 💡 {advice_type}")
+                        st.write(result.content)
+
+                        # YouTube recommendations with links
+                        st.markdown("---")
+                        st.markdown("### 📺 Learn More on YouTube")
+
+                        video_prompt = f"""Suggest 5 YouTube videos about {advice_type}. Format EXACTLY as:
+1. Topic | search query
+Focus on expert content."""
+
+                        video_result = llm.invoke(video_prompt)
+
+                        # Create clickable links
+                        import urllib.parse
+                        lines = video_result.content.strip().split('\n')
+                        for line in lines:
+                            if '|' in line:
+                                parts = line.split('|', 1)
+                                if len(parts) == 2:
+                                    topic = parts[0].strip()
+                                    query = parts[1].strip()
+                                    url = f"https://www.youtube.com/results?search_query={urllib.parse.quote(query)}"
+                                    st.markdown(f"**{topic}**")
+                                    st.markdown(f"🔗 [Watch on YouTube]({url})")
+                                    st.divider()
+
+                        # Additional resources
+                        st.markdown("---")
+                        st.markdown("### 📚 Additional Resources")
+
+                        resource_prompt = f"""Suggest 3 free online resources (blogs, articles, tools) for {advice_type}. Format:
+1. Resource name - Brief description"""
+
+                        resource_result = llm.invoke(resource_prompt)
+                        st.write(resource_result.content)
+
+                        full_content = f"{result.content}\n\n---\nVIDEOS:\n{video_result.content}\n\n---\nRESOURCES:\n{resource_result.content}"
+                        st.download_button(
+                            label="📥 Download Complete Guide",
+                            data=full_content,
+                            file_name=f"{advice_type.lower().replace(' ', '_')}_complete_guide.txt",
+                            mime="text/plain"
+                        )
+
+                    except Exception as e:
+                        st.error(f"Error generating advice: {str(e)}")
+
+        # TAB 4: Profile Analysis
+        with ai_tab4:
+            st.subheader("🎯 Deep Profile Analysis")
+            st.markdown("Get comprehensive analysis of your strengths, weaknesses, and opportunities.")
+
+            if st.button("🔍 Analyze My Profile", use_container_width=True, type="primary"):
+                with st.spinner("Analyzing your profile..."):
+                    try:
+                        from langchain_openai import ChatOpenAI
+                        llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.5)
+
+                        prompt = f"""Perform deep SWOT analysis for:
+
+Name: {st.session_state.profile.name}
+Education: {st.session_state.profile.education_level} in {st.session_state.profile.field_of_study}
+GPA: {st.session_state.profile.gpa or 'Not provided'}
+Experience: {st.session_state.profile.experience_years} years
+Languages: {st.session_state.profile.languages}
+Skills: {st.session_state.profile.skills}
+Achievements: {st.session_state.profile.achievements}
+Goals: {st.session_state.profile.goals}
+
+Provide detailed analysis:
+
+**STRENGTHS:**
+- Top 5 strongest points
+- How to leverage them
+
+**WEAKNESSES:**
+- Areas needing improvement
+- Action plan for each
+
+**OPPORTUNITIES:**
+- Career paths that fit well
+- Emerging opportunities in their field
+
+**THREATS:**
+- Potential challenges
+- How to mitigate them
+
+**COMPETITIVE EDGE:**
+- What makes them unique
+- How to stand out
+
+Be specific and actionable."""
+
+                        result = llm.invoke(prompt)
+
+                        st.markdown("### 🎯 Your Profile Analysis")
+                        st.write(result.content)
+
+                        # Skill development videos with links
+                        st.markdown("---")
+                        st.markdown("### 📺 Skill Development Videos")
+
+                        video_prompt = f"""For {st.session_state.profile.field_of_study}, suggest 5 skill development videos. Format EXACTLY as:
+1. Topic | search query"""
+
+                        video_result = llm.invoke(video_prompt)
+
+                        # Create clickable links
+                        import urllib.parse
+                        lines = video_result.content.strip().split('\n')
+                        for line in lines:
+                            if '|' in line:
+                                parts = line.split('|', 1)
+                                if len(parts) == 2:
+                                    topic = parts[0].strip()
+                                    query = parts[1].strip()
+                                    url = f"https://www.youtube.com/results?search_query={urllib.parse.quote(query)}"
+                                    st.markdown(f"**{topic}**")
+                                    st.markdown(f"🔗 [Watch on YouTube]({url})")
+                                    st.divider()
+
+                        # Action plan template
+                        st.markdown("---")
+                        st.markdown("### 📋 30-Day Action Plan Template")
+                        st.info("""
+**Week 1:** Address one critical weakness
+**Week 2:** Build on existing strengths
+**Week 3:** Explore one new opportunity
+**Week 4:** Review progress and adjust
+
+Set specific, measurable goals for each week!
+                        """)
+
+                        full_content = f"{result.content}\n\n---\nSKILL VIDEOS:\n{video_result.content}"
+                        st.download_button(
+                            label="📥 Download Analysis + Action Plan",
+                            data=full_content,
+                            file_name="profile_analysis_with_plan.txt",
+                            mime="text/plain"
+                        )
+
+                    except Exception as e:
+                        st.error(f"Error analyzing profile: {str(e)}")
+
+        # TAB 5: Success Strategy
+        with ai_tab5:
+            st.subheader("📊 Application Success Strategy")
+            st.markdown("Data-driven strategy to maximize your acceptance rate.")
+
+            if st.button("📊 Generate Strategy", use_container_width=True, type="primary"):
+                with st.spinner("Creating your success strategy..."):
+                    try:
+                        from langchain_openai import ChatOpenAI
+                        llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.5)
+
+                        # Include match history if available
+                        match_context = ""
+                        if st.session_state.evaluation_history:
+                            match_context = f"\n\nMatched Opportunities: {len(st.session_state.evaluation_history)}"
+                            avg_score = sum(r.get('score', 0) for r in st.session_state.evaluation_history) / len(st.session_state.evaluation_history)
+                            match_context += f"\nAverage Match Score: {avg_score:.0%}"
+
+                        prompt = f"""Create comprehensive application success strategy:
+
+Profile: {st.session_state.profile.name}
+Field: {st.session_state.profile.field_of_study}
+Experience: {st.session_state.profile.experience_years} years{match_context}
+
+Provide:
+
+**APPLICATION STRATEGY:**
+1. Ideal number of applications to target
+2. Mix of reach/target/safety opportunities
+3. Application pacing (how many per week)
+
+**PRIORITIZATION FRAMEWORK:**
+- How to decide which to apply to first
+- Time investment per application
+- ROI analysis framework
+
+**DIFFERENTIATION STRATEGY:**
+- How to stand out from other applicants
+- Unique angle to emphasize
+- Story to tell
+
+**RISK MITIGATION:**
+- Backup plans
+- Diversification strategy
+- Timeline buffers
+
+**SUCCESS METRICS:**
+- KPIs to track
+- When to adjust strategy
+
+Make it data-driven and actionable."""
+
+                        result = llm.invoke(prompt)
+
+                        st.markdown("### 📊 Your Success Strategy")
+                        st.write(result.content)
+
+                        # Success story videos with links
+                        st.markdown("---")
+                        st.markdown("### 📺 Success Stories & Case Studies")
+
+                        video_prompt = f"""Suggest 5 success story videos for {st.session_state.profile.field_of_study}. Format EXACTLY as:
+1. Topic | search query
+Focus on scholarships/jobs."""
+
+                        video_result = llm.invoke(video_prompt)
+
+                        # Create clickable links
+                        import urllib.parse
+                        lines = video_result.content.strip().split('\n')
+                        for line in lines:
+                            if '|' in line:
+                                parts = line.split('|', 1)
+                                if len(parts) == 2:
+                                    topic = parts[0].strip()
+                                    query = parts[1].strip()
+                                    url = f"https://www.youtube.com/results?search_query={urllib.parse.quote(query)}"
+                                    st.markdown(f"**{topic}**")
+                                    st.markdown(f"🔗 [Watch on YouTube]({url})")
+                                    st.divider()
+
+                        # Strategy checklist
+                        st.markdown("---")
+                        st.markdown("### ✅ Strategy Implementation Checklist")
+                        col1, col2 = st.columns(2)
+
+                        with col1:
+                            st.markdown("""
+**Before Applying:**
+- [ ] Research opportunity thoroughly
+- [ ] Customize all materials
+- [ ] Get feedback from 2+ people
+- [ ] Proofread everything 3x
+- [ ] Check all requirements
+                            """)
+
+                        with col2:
+                            st.markdown("""
+**After Applying:**
+- [ ] Send thank you/follow-up
+- [ ] Track application in spreadsheet
+- [ ] Set reminder for result date
+- [ ] Continue other applications
+- [ ] Reflect and improve process
+                            """)
+
+                        full_content = f"{result.content}\n\n---\nSUCCESS VIDEOS:\n{video_result.content}"
+                        st.download_button(
+                            label="📥 Download Complete Strategy",
+                            data=full_content,
+                            file_name="success_strategy_complete.txt",
+                            mime="text/plain"
+                        )
+
+                    except Exception as e:
+                        st.error(f"Error generating strategy: {str(e)}")
+
+        # TAB 6: Ask AI Anything
+        with ai_tab6:
+            st.subheader("🤖 Ask AI Career Advisor")
+            st.markdown("Have a specific question? Ask the AI directly!")
+
+            user_question = st.text_area(
+                "Your Question:",
+                placeholder="E.g., Should I apply to this scholarship? How can I improve my chances? What skills should I learn?",
+                height=100
+            )
+
+            if st.button("🤖 Get Answer", use_container_width=True, type="primary"):
+                if user_question:
+                    with st.spinner("AI is thinking..."):
+                        try:
+                            from langchain_openai import ChatOpenAI
+                            llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7)
+
+                            prompt = f"""You are an expert career advisor. Answer this question:
+
+Question: {user_question}
+
+Context about the person:
+- Name: {st.session_state.profile.name}
+- Education: {st.session_state.profile.education_level} in {st.session_state.profile.field_of_study}
+- Experience: {st.session_state.profile.experience_years} years
+- Skills: {st.session_state.profile.skills}
+- Goals: {st.session_state.profile.goals}
+
+Provide a detailed, helpful answer that:
+1. Directly addresses their question
+2. Considers their specific background
+3. Includes actionable advice
+4. Suggests next steps
+5. Provides relevant resources if applicable
+
+Be conversational but professional."""
+
+                            result = llm.invoke(prompt)
+
+                            st.markdown("### 💬 AI Response")
+                            st.write(result.content)
+
+                            # Related videos with links
+                            st.markdown("---")
+                            st.markdown("### 📺 Related Video Resources")
+
+                            video_prompt = f"""For question: "{user_question}", suggest 3 videos. Format EXACTLY as:
+1. Topic | search query"""
+
+                            video_result = llm.invoke(video_prompt)
+
+                            # Create clickable links
+                            import urllib.parse
+                            lines = video_result.content.strip().split('\n')
+                            for line in lines:
+                                if '|' in line:
+                                    parts = line.split('|', 1)
+                                    if len(parts) == 2:
+                                        topic = parts[0].strip()
+                                        query = parts[1].strip()
+                                        url = f"https://www.youtube.com/results?search_query={urllib.parse.quote(query)}"
+                                        st.markdown(f"**{topic}**")
+                                        st.markdown(f"🔗 [Watch on YouTube]({url})")
+                                        st.divider()
+
+                        except Exception as e:
+                            st.error(f"Error: {str(e)}")
+                else:
+                    st.warning("Please enter a question first!")
+
+        # Quick Tips Section
+        with st.expander("📖 How to Use AI Strategy Assistant"):
             st.markdown("""
-            Our system uses **4 specialized AI agents** that work in parallel to provide comprehensive insights:
+            ### 6 Powerful Tools at Your Disposal:
 
-            1. **🔍 Profile Optimizer Agent**
-               - Deep analysis of your strengths and weaknesses
-               - Identifies quick wins and critical gaps
-               - Provides personalized improvement recommendations
+            **🗺️ Roadmap** - Get a personalized career roadmap with short, medium, and long-term goals
 
-            2. **🎯 Opportunity Scout Agent**
-               - Generates targeted search strategies
-               - Identifies optimal platforms and filters
-               - Recommends best timing for applications
+            **📅 Timeline** - Create a week-by-week application timeline based on your matched opportunities
 
-            3. **📋 Application Strategist Agent**
-               - Prioritizes applications by success probability
-               - Estimates time investment for each opportunity
-               - Creates customized application roadmap
+            **💡 Tips & Advice** - Get expert tips on applications, interviews, CV writing, and more
 
-            4. **🎭 Orchestrator Agent**
-               - Coordinates all agents to run in parallel
-               - Synthesizes results into actionable plan
-               - Calculates overall success metrics
+            **🎯 Profile Analysis** - Deep SWOT analysis of your strengths, weaknesses, opportunities, and threats
 
-            **Result:** A unified action plan that maximizes your chances of success!
+            **📊 Success Strategy** - Data-driven strategy to maximize your acceptance rate
+
+            **🤖 Ask AI** - Have a specific question? Ask the AI career advisor directly!
+
+            All advice is personalized based on your profile and completely downloadable for offline reference.
             """)
 
         # Main Action Button
