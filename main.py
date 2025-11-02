@@ -1006,14 +1006,17 @@ with tab2:
                                     st.session_state.selected_opportunity_for_materials = opportunity
                                     st.session_state.selected_opportunity_data = selected_opp_data
                                     st.success("✅ Materials ready! Go to 'Generate Materials' tab")
+                                    st.info("👉 Click on 'Generate Materials' tab above")
 
                             with col_act3:
                                 # Save to history button
                                 if st.button("💾 Save to History", use_container_width=True, key="save_specific"):
                                     evaluation_record = {
                                         "timestamp": datetime.now().isoformat(),
+                                        "opportunity": opportunity,
                                         "opportunity_title": opportunity.title,
                                         "opportunity_type": opportunity.opp_type,
+                                        "opportunity_data": selected_opp_data,
                                         "score": result.compatibility_score,
                                         "result": result
                                     }
@@ -1210,45 +1213,79 @@ with tab3:
         
         st.divider()
         st.write(f"**{len(st.session_state.evaluation_history)} opportunities evaluated:**")
-        
+
         for i, record in enumerate(reversed(st.session_state.evaluation_history)):
-            with st.expander(f"🎯 {record['opportunity'].title} - {record['timestamp']}", expanded=False):
-                col1, col2, col3 = st.columns([2, 1, 1])
-                
+            score = record['result'].compatibility_score
+
+            # Color-coded header
+            if score >= 0.7:
+                emoji = "🟢"
+                label = "Strong Match"
+                color = "#28a745"
+            elif score >= 0.5:
+                emoji = "🟡"
+                label = "Good Match"
+                color = "#ffc107"
+            else:
+                emoji = "🔴"
+                label = "Weak Match"
+                color = "#dc3545"
+
+            with st.expander(f"{emoji} {record['opportunity'].title} - {score:.1%} ({label})", expanded=False):
+                # Score badge
+                st.markdown(f"""
+                <div style="background: linear-gradient(135deg, {color}22 0%, {color}11 100%);
+                     padding: 15px; border-radius: 10px; border-left: 4px solid {color}; margin-bottom: 15px;">
+                    <h3 style="margin: 0; color: {color};">Match Score: {score:.1%}</h3>
+                    <p style="margin: 5px 0 0 0; opacity: 0.8;">{label}</p>
+                </div>
+                """, unsafe_allow_html=True)
+
+                col1, col2 = st.columns([2, 1])
+
                 with col1:
+                    st.markdown("**📋 Opportunity Details**")
                     st.write(f"**Type:** {record['opportunity'].opp_type}")
                     if record['opportunity'].deadline:
                         st.write(f"**Deadline:** {record['opportunity'].deadline}")
-                    
-                    # Mini status indicator
-                    score = record['result'].compatibility_score
-                    if score >= 0.7:
-                        st.success(f"🎯 Strong Match ({score:.1%})")
-                    elif score >= 0.5:
-                        st.info(f"👍 Good Match ({score:.1%})")
-                    else:
-                        st.warning(f"⚠️ Partial Match ({score:.1%})")
-                
+                    st.write(f"**Evaluated:** {record['timestamp']}")
+
+                    st.markdown("**💪 Your Strengths:**")
+                    st.write(record['result'].strengths)
+
+                    st.markdown("**⚠️ Gaps to Address:**")
+                    st.write(record['result'].gaps)
+
+                    st.markdown("**💡 Recommendation:**")
+                    st.write(record['result'].recommendation)
+
                 with col2:
-                    st.write("**Recommendation:**")
-                    st.write(record['result'].recommendation[:100] + "..." if len(record['result'].recommendation) > 100 else record['result'].recommendation)
-                
-                with col3:
-                    # PDF Export for individual evaluation
+                    st.markdown("**Actions**")
+
+                    # Generate Materials button
+                    if st.button("✍️ Generate Materials", key=f"gen_mat_hist_{i}", use_container_width=True):
+                        st.session_state.selected_opportunity_for_materials = record['opportunity']
+                        if 'opportunity_data' in record:
+                            st.session_state.selected_opportunity_data = record['opportunity_data']
+                        st.success("✅ Go to 'Generate Materials' tab")
+                        st.rerun()
+
+                    # PDF Export
                     try:
                         from pdf_generator import generate_evaluation_pdf
                         pdf_buffer = generate_evaluation_pdf(
-                            st.session_state.profile, 
-                            record['opportunity'], 
+                            st.session_state.profile,
+                            record['opportunity'],
                             record['result']
                         )
-                        
+
                         st.download_button(
                             label="📄 Export PDF",
                             data=pdf_buffer.getvalue(),
                             file_name=f"report_{record['opportunity'].title.replace(' ', '_')}.pdf",
                             mime="application/pdf",
-                            key=f"pdf_{i}"
+                            key=f"pdf_{i}",
+                            use_container_width=True
                         )
                     except:
                         pass
@@ -1322,62 +1359,69 @@ with tab4:
                 )
 
             with col2:
-                # Use opportunity from history or enter new one
-                use_previous = False
-                use_selected = False
+                # Opportunity selection mode
+                available_options = []
+                default_index = 0
 
                 if st.session_state.selected_opportunity_for_materials:
-                    use_selected = st.checkbox("Use selected opportunity", value=True, help="Automatically filled from your selected match")
+                    available_options.append("Selected Match")
+                if st.session_state.evaluation_history:
+                    if not available_options:
+                        default_index = 0
+                    available_options.append("History")
 
-                if not use_selected and st.session_state.evaluation_history:
-                    use_previous = st.checkbox("Use previous opportunity")
-                    if use_previous:
+                if not available_options:
+                    st.warning("⚠️ No opportunities available. Please match an opportunity first!")
+                    use_selected = False
+                    use_previous = False
+                    selected_opp = None
+                else:
+                    opp_selection_mode = st.radio(
+                        "Select Opportunity From:",
+                        available_options,
+                        index=default_index,
+                        help="Choose where to get opportunity details"
+                    )
+
+                    use_selected = False
+                    use_previous = False
+                    selected_opp = None
+
+                    if opp_selection_mode == "Selected Match":
+                        use_selected = True
+                    elif opp_selection_mode == "History":
+                        use_previous = True
                         selected_opp = st.selectbox(
-                            "Select Opportunity",
+                            "Choose from evaluated opportunities:",
                             range(len(st.session_state.evaluation_history)),
-                            format_func=lambda x: st.session_state.evaluation_history[x]['opportunity'].title
+                            format_func=lambda x: f"{st.session_state.evaluation_history[x]['opportunity'].title} ({st.session_state.evaluation_history[x]['result'].compatibility_score:.0%})"
                         )
 
             # Opportunity details
-            if use_selected and st.session_state.selected_opportunity_for_materials:
-                st.subheader("Selected Opportunity (Auto-filled)")
+            st.divider()
 
+            if use_selected and st.session_state.selected_opportunity_for_materials:
+                st.subheader("✅ Selected Opportunity")
                 col_det1, col_det2 = st.columns(2)
                 with col_det1:
                     st.write(f"**Title:** {st.session_state.selected_opportunity_for_materials.title}")
                     st.write(f"**Type:** {st.session_state.selected_opportunity_for_materials.opp_type}")
-
                 with col_det2:
-                    # Show additional metadata if available
                     if has_selected_opp_data:
                         if st.session_state.selected_opportunity_data.get('deadline'):
                             st.write(f"**Deadline:** {st.session_state.selected_opportunity_data.get('deadline')}")
                         if st.session_state.selected_opportunity_data.get('funding'):
                             st.write(f"**Funding:** {st.session_state.selected_opportunity_data.get('funding')}")
 
-                with st.expander("📄 View Full Details", expanded=False):
-                    st.markdown("**Description:**")
-                    st.write(st.session_state.selected_opportunity_for_materials.description)
-                    st.markdown("**Requirements:**")
-                    st.write(st.session_state.selected_opportunity_for_materials.requirements)
+            elif use_previous and st.session_state.evaluation_history:
+                st.subheader("✅ Selected Opportunity")
+                selected_record = st.session_state.evaluation_history[selected_opp]
+                st.write(f"**Title:** {selected_record['opportunity'].title}")
+                st.write(f"**Type:** {selected_record['opportunity'].opp_type}")
+                st.write(f"**Match Score:** {selected_record['result'].compatibility_score:.0%}")
 
-                    # Show link if available
-                    if has_selected_opp_data and st.session_state.selected_opportunity_data.get('link'):
-                        st.markdown(f"**Application Link:** [{st.session_state.selected_opportunity_data.get('link')}]({st.session_state.selected_opportunity_data.get('link')})")
-
-                # Button to clear selection
-                if st.form_submit_button("🔄 Clear & Enter New Opportunity", type="secondary"):
-                    st.session_state.selected_opportunity_for_materials = None
-                    st.session_state.selected_opportunity_data = None
-                    st.rerun()
-
-            elif not use_previous:
-                st.subheader("Opportunity Details (Manual Entry)")
-                st.info("💡 Tip: Select an opportunity from 'Check Match' or 'Opportunity Database' to auto-fill this form!")
-                opp_title = st.text_input("Opportunity Title")
-                opp_type = st.selectbox("Type", ["Scholarship", "Job", "Academic Program", "Fellowship"])
-                opp_description = st.text_area("Description", height=100)
-                opp_requirements = st.text_area("Requirements", height=100)
+            else:
+                st.warning("⚠️ Please select an opportunity from 'Selected Match' or 'History' to generate materials.")
             
             generate_material = st.form_submit_button("✍️ Generate Material", use_container_width=True)
             
@@ -1388,16 +1432,8 @@ with tab4:
                 elif use_previous and st.session_state.evaluation_history:
                     opportunity = st.session_state.evaluation_history[selected_opp]['opportunity']
                 else:
-                    if not all([opp_title, opp_description, opp_requirements]):
-                        st.error("Please fill all opportunity fields")
-                        st.stop()
-
-                    opportunity = Opportunity(
-                        title=opp_title,
-                        opp_type=opp_type,
-                        description=opp_description,
-                        requirements=opp_requirements
-                    )
+                    st.error("Please select an opportunity from 'Selected Match' or 'History' to generate materials.")
+                    st.stop()
                 
                 # Generate material
                 with st.spinner(f"🤖 Generating {material_type.replace('_', ' ')}... This may take 10-15 seconds."):
@@ -1809,34 +1845,135 @@ with tab6:
     # SUB-TAB 1: Add Opportunity
     with db_tab1:
         st.subheader("Add New Opportunity to Database")
-        
+
+        # Add URL extraction option
+        st.markdown("**Option 1: Extract from URL**")
+        col_url1, col_url2 = st.columns([3, 1])
+        with col_url1:
+            extract_url = st.text_input("Paste URL to extract opportunity details:", placeholder="https://...")
+        with col_url2:
+            st.write("")
+            st.write("")
+            extract_btn = st.button("🔍 Extract", use_container_width=True)
+
+        if extract_btn and extract_url:
+            with st.spinner("Extracting opportunity details from URL..."):
+                try:
+                    from langchain_openai import ChatOpenAI
+                    import requests
+                    from bs4 import BeautifulSoup
+
+                    # Fetch webpage
+                    headers = {'User-Agent': 'Mozilla/5.0'}
+                    response = requests.get(extract_url, headers=headers, timeout=10)
+                    soup = BeautifulSoup(response.content, 'html.parser')
+
+                    # Extract text
+                    for script in soup(["script", "style"]):
+                        script.decompose()
+                    text = soup.get_text()
+                    text = ' '.join(text.split())[:10000]
+
+                    # Use AI to extract structured data
+                    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+                    prompt = f"""Extract opportunity details from this webpage text and return ONLY a valid JSON object (no markdown, no code blocks):
+
+{text}
+
+Return JSON with these fields:
+- title: opportunity name
+- type: one of (Scholarship/Job/Academic Program/Fellowship/Internship/Other)
+- description: brief summary
+- requirements: eligibility criteria
+- deadline: if mentioned, format YYYY-MM-DD
+- provider: organization name
+- funding: amount if mentioned
+
+Return ONLY the JSON object, nothing else."""
+
+                    result = llm.invoke(prompt)
+
+                    # Clean the response
+                    import json
+                    import re
+
+                    content = result.content.strip()
+                    # Remove markdown code blocks if present
+                    content = re.sub(r'^```json\s*', '', content)
+                    content = re.sub(r'^```\s*', '', content)
+                    content = re.sub(r'\s*```$', '', content)
+                    content = content.strip()
+
+                    # Parse JSON
+                    extracted_data = json.loads(content)
+
+                    st.success("✅ Extracted! Review below:")
+                    st.session_state.extracted_from_url = extracted_data
+
+                    # Display in a nice format
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.write(f"**Title:** {extracted_data.get('title', 'N/A')}")
+                        st.write(f"**Type:** {extracted_data.get('type', 'N/A')}")
+                        st.write(f"**Provider:** {extracted_data.get('provider', 'N/A')}")
+                    with col2:
+                        st.write(f"**Deadline:** {extracted_data.get('deadline', 'N/A')}")
+                        st.write(f"**Funding:** {extracted_data.get('funding', 'N/A')}")
+
+                    st.write(f"**Description:** {extracted_data.get('description', 'N/A')}")
+                    st.write(f"**Requirements:** {extracted_data.get('requirements', 'N/A')}")
+
+                    # Button to save directly
+                    if st.button("💾 Save This to Database", use_container_width=True):
+                        from opportunities_storage import save_opportunity
+                        opp_data = {
+                            "title": extracted_data.get('title'),
+                            "type": extracted_data.get('type'),
+                            "description": extracted_data.get('description'),
+                            "requirements": extracted_data.get('requirements'),
+                            "deadline": extracted_data.get('deadline'),
+                            "provider": extracted_data.get('provider'),
+                            "funding": extracted_data.get('funding'),
+                            "link": extract_url
+                        }
+                        if save_opportunity(opp_data):
+                            st.success("✅ Saved to database!")
+                            st.balloons()
+                        else:
+                            st.error("Failed to save")
+                except Exception as e:
+                    st.error(f"Failed to extract: {str(e)}")
+
+        st.divider()
+        st.markdown("**Option 2: Manual Entry**")
+
         with st.form("add_to_database_form"):
             col1, col2 = st.columns([2, 1])
-            
+
             with col1:
                 db_title = st.text_input("Opportunity Title*", key="db_title")
-            
+
             with col2:
                 db_type = st.selectbox(
                     "Type*",
                     ["Scholarship", "Job", "Academic Program", "Fellowship", "Internship", "Other"],
                     key="db_type"
                 )
-            
+
             db_description = st.text_area(
                 "Description*",
                 height=100,
                 key="db_description",
                 placeholder="Enter the opportunity description..."
             )
-            
+
             db_requirements = st.text_area(
                 "Requirements*",
                 height=100,
                 key="db_requirements",
                 placeholder="Enter eligibility criteria and requirements..."
             )
-            
+
             col1, col2, col3 = st.columns(3)
             with col1:
                 db_deadline = st.text_input("Deadline (optional)", key="db_deadline", placeholder="YYYY-MM-DD")
@@ -1844,9 +1981,9 @@ with tab6:
                 db_provider = st.text_input("Provider (optional)", key="db_provider", placeholder="Organization name")
             with col3:
                 db_funding = st.text_input("Funding Amount (optional)", key="db_funding", placeholder="e.g., $10,000")
-            
+
             db_link = st.text_input("Application Link/Contact (optional)", key="db_link", placeholder="https://...")
-            
+
             submit_to_db = st.form_submit_button("💾 Save to Database", use_container_width=True)
             
             if submit_to_db:
