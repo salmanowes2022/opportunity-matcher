@@ -98,26 +98,10 @@ Also provide:
 
     chain = llm.with_structured_output(ApplicationMaterial)
 
-    # Format the messages
+    # Format the messages (human_prompt already has all values formatted above)
     messages = [
         {"role": "system", "content": system_prompt},
-        {"role": "user", "content": human_prompt.format(
-            name=profile.name,
-            education_level=profile.education_level,
-            field_of_study=profile.field_of_study,
-            gpa=profile.gpa or "Not provided",
-            experience_years=profile.experience_years,
-            skills=profile.skills,
-            languages=profile.languages,
-            achievements=profile.achievements,
-            goals=profile.goals,
-            opp_title=opportunity.title,
-            opp_type=opportunity.opp_type,
-            opp_description=opportunity.description,
-            opp_requirements=opportunity.requirements,
-            material_type=material_type,
-            target_words=target_words
-        )}
+        {"role": "user", "content": human_prompt}
     ]
 
     try:

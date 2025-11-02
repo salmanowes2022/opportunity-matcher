@@ -2000,6 +2000,27 @@ Return ONLY the JSON object, nothing else."""
                 except Exception as e:
                     st.error(f"Failed to extract: {str(e)}")
 
+                    # Debug info
+                    with st.expander("🔍 Debug Information"):
+                        import sys
+                        st.write(f"**Error type:** {type(e).__name__}")
+                        st.write(f"**Python:** {sys.executable}")
+
+                        # Check if modules are available
+                        try:
+                            import bs4
+                            st.success(f"✅ BeautifulSoup4 installed at: {bs4.__file__}")
+                        except ImportError:
+                            st.error("❌ BeautifulSoup4 NOT installed")
+                            st.code("pip install beautifulsoup4")
+
+                        try:
+                            import requests
+                            st.success(f"✅ Requests installed at: {requests.__file__}")
+                        except ImportError:
+                            st.error("❌ Requests NOT installed")
+                            st.code("pip install requests")
+
         st.divider()
         st.markdown("**Option 2: Manual Entry**")
 
