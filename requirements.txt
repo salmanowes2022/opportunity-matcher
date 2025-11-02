@@ -7,3 +7,4 @@ requests
 pypdf2
 pillow
 pydantic
+google-generativeai

@@ -15,7 +15,8 @@ def setup_gemini():
         raise ValueError("GEMINI_API_KEY not found. Please add it to your .env file or Streamlit secrets")
     
     genai.configure(api_key=api_key)
-    return genai.GenerativeModel('gemini-1.5-flash')
+    # Use the latest stable flash model that supports vision
+    return genai.GenerativeModel('models/gemini-2.0-flash')
 
 def extract_opportunity_from_image(image_bytes: bytes) -> Optional[Dict]:
     """

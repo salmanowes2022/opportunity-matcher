@@ -199,7 +199,7 @@ Rules:
         with col_btn2:
             if st.button("🚀 Load Demo Profile", use_container_width=True, help="Quick load a sample profile for testing"):
                 demo_profile = UserProfile(
-                    name="Sarah Ahmed",
+                    name="Omar Ahmed",
                     education_level="Master's",
                     field_of_study="Computer Science",
                     gpa=3.8,
@@ -686,88 +686,185 @@ with tab2:
                                 </div>
                                 """, unsafe_allow_html=True)
                             else:
-                                # Display Results with enhanced styling
-                                st.success("✅ Analysis Complete!")
-                                st.divider()
-                                
-                                # Enhanced score display
-                                create_status_indicator(result.compatibility_score)
-                                
-                                # Detailed analysis with enhanced cards
-                                col1, col2 = st.columns(2)
-                                
-                                with col1:
-                                    st.markdown("""
-                                    <div class="success-card">
-                                        <h4>💪 Your Strengths</h4>
-                                    </div>
-                                    """, unsafe_allow_html=True)
-                                    st.write(result.strengths)
-                                
-                                with col2:
-                                    st.markdown("""
-                                    <div class="info-card">
-                                        <h4>🔍 Areas to Address</h4>
-                                    </div>
-                                    """, unsafe_allow_html=True)
-                                    st.write(result.gaps)
-                                
-                                st.markdown("""
-                                <div class="info-card">
-                                    <h4>💡 Recommendation</h4>
+                                # OPTIMIZED ANALYTICS-STYLE RESULTS DISPLAY (Same as Check Match tab)
+                                st.balloons()
+
+                                # Header with opportunity title
+                                st.markdown(f"""
+                                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                            padding: 25px; border-radius: 15px; margin-bottom: 20px;">
+                                    <h2 style="color: white; margin: 0; text-align: center;">
+                                        📊 Match Analysis Complete
+                                    </h2>
+                                    <p style="color: rgba(255,255,255,0.9); text-align: center; margin: 10px 0 0 0; font-size: 18px;">
+                                        {opportunity.title}
+                                    </p>
                                 </div>
                                 """, unsafe_allow_html=True)
-                                st.write(result.recommendation)
-                                
-                                # Actions section - OUTSIDE the form
-                                st.divider()
-                                st.subheader("📋 Next Steps")
-                                
-                                col1, col2, col3, col4 = st.columns(4)
-                                
-                                with col1:
-                                    # Generate evaluation PDF
+
+                                # KEY METRICS ROW with enhanced design
+                                col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+
+                                with col_m1:
+                                    score_color = "#4CAF50" if result.compatibility_score >= 0.7 else "#FF9800" if result.compatibility_score >= 0.4 else "#F44336"
+                                    st.markdown(f"""
+                                    <div style="background: white; padding: 20px; border-radius: 12px;
+                                                border-left: 5px solid {score_color}; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                        <p style="color: #666; margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Match Score</p>
+                                        <h2 style="color: {score_color}; margin: 5px 0; font-size: 36px; font-weight: bold;">{result.compatibility_score:.0%}</h2>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+
+                                with col_m2:
+                                    match_label = "Strong" if result.compatibility_score >= 0.7 else "Moderate" if result.compatibility_score >= 0.4 else "Weak"
+                                    match_emoji = "🟢" if result.compatibility_score >= 0.7 else "🟡" if result.compatibility_score >= 0.4 else "🔴"
+                                    st.markdown(f"""
+                                    <div style="background: white; padding: 20px; border-radius: 12px;
+                                                box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                        <p style="color: #666; margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Match Level</p>
+                                        <h3 style="color: #333; margin: 5px 0; font-size: 24px;">{match_emoji} {match_label}</h3>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+
+                                with col_m3:
+                                    st.markdown(f"""
+                                    <div style="background: white; padding: 20px; border-radius: 12px;
+                                                box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                        <p style="color: #666; margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Type</p>
+                                        <h3 style="color: #333; margin: 5px 0; font-size: 20px;">🎓 {opportunity.opp_type}</h3>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+
+                                with col_m4:
+                                    provider_name = prefill.get('provider', 'N/A') if prefill and prefill.get('provider') != 'null' else 'N/A'
+                                    st.markdown(f"""
+                                    <div style="background: white; padding: 20px; border-radius: 12px;
+                                                box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                        <p style="color: #666; margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Provider</p>
+                                        <h3 style="color: #333; margin: 5px 0; font-size: 18px;">🏛️ {provider_name[:20]}</h3>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+
+                                st.markdown("<br>", unsafe_allow_html=True)
+
+                                # DETAILED ANALYSIS SECTION with tabs
+                                analysis_tab1, analysis_tab2, analysis_tab3 = st.tabs(["💪 Strengths", "⚠️ Gaps", "💡 Recommendation"])
+
+                                with analysis_tab1:
+                                    st.markdown("""
+                                    <div style="background: linear-gradient(135deg, #667eea22 0%, #764ba222 100%);
+                                                padding: 25px; border-radius: 12px; margin: 15px 0;">
+                                    """, unsafe_allow_html=True)
+                                    st.markdown("#### What Makes You a Great Candidate")
+                                    st.write(result.strengths)
+                                    st.markdown("</div>", unsafe_allow_html=True)
+
+                                with analysis_tab2:
+                                    st.markdown("""
+                                    <div style="background: #fff3cd; padding: 25px; border-radius: 12px;
+                                                border-left: 4px solid #ffc107; margin: 15px 0;">
+                                    """, unsafe_allow_html=True)
+                                    st.markdown("#### Areas for Improvement")
+                                    st.write(result.gaps)
+                                    st.markdown("</div>", unsafe_allow_html=True)
+
+                                with analysis_tab3:
+                                    st.markdown("""
+                                    <div style="background: #d1ecf1; padding: 25px; border-radius: 12px;
+                                                border-left: 4px solid #0dcaf0; margin: 15px 0;">
+                                    """, unsafe_allow_html=True)
+                                    st.markdown("#### Expert Recommendation")
+                                    st.write(result.recommendation)
+
+                                    st.markdown("#### 📝 Action Steps")
+                                    if result.compatibility_score >= 0.6:
+                                        st.markdown("""
+                                        - ✅ **High Priority**: Start preparing your application materials
+                                        - 📚 **Research**: Deep dive into the organization/program
+                                        - 🔧 **Optimize**: Address the gaps mentioned above
+                                        - ⏰ **Timeline**: Begin application process immediately
+                                        """)
+                                    else:
+                                        st.markdown("""
+                                        - 📚 **Skill Development**: Strengthen your profile in identified areas
+                                        - 🔍 **Alternative Search**: Look for opportunities that better match your profile
+                                        - 💪 **Profile Enhancement**: Focus on closing critical gaps
+                                        - ⏳ **Future Consideration**: Revisit this opportunity after improvements
+                                        """)
+                                    st.markdown("</div>", unsafe_allow_html=True)
+
+                                # AUTOMATICALLY SAVE TO HISTORY
+                                evaluation_record = {
+                                    "timestamp": datetime.now().isoformat(),
+                                    "opportunity": opportunity,
+                                    "opportunity_title": opportunity.title,
+                                    "opportunity_type": opportunity.opp_type,
+                                    "opportunity_data": {
+                                        "title": opportunity.title,
+                                        "type": opportunity.opp_type,
+                                        "description": opportunity.description,
+                                        "requirements": opportunity.requirements,
+                                        "deadline": opportunity.deadline,
+                                        "provider": prefill.get('provider') if prefill and prefill.get('provider') != 'null' else None,
+                                        "funding": prefill.get('funding') if prefill and prefill.get('funding') != 'null' else None,
+                                        "link": prefill.get('link') if prefill and prefill.get('link') != 'null' else None
+                                    },
+                                    "score": result.compatibility_score,
+                                    "result": result
+                                }
+
+                                # Check if already in history (avoid duplicates)
+                                already_exists = any(
+                                    rec.get('opportunity_title') == opportunity.title
+                                    for rec in st.session_state.evaluation_history
+                                )
+
+                                if not already_exists:
+                                    st.session_state.evaluation_history.append(evaluation_record)
+                                    # Save to local file
+                                    import pickle
                                     try:
-                                        from pdf_generator import generate_evaluation_pdf
-                                        pdf_buffer = generate_evaluation_pdf(st.session_state.profile, opportunity, result)
-                                        
-                                        st.download_button(
-                                            label="📄 Download PDF",
-                                            data=pdf_buffer.getvalue(),
-                                            file_name=f"evaluation_{opportunity.title.replace(' ', '_')}.pdf",
-                                            mime="application/pdf",
-                                            help="Download a professional PDF report"
-                                        )
-                                    except Exception as e:
-                                        st.button(
-                                            "📄 PDF Export",
-                                            disabled=True,
-                                            help="PDF export requires reportlab library"
-                                        )
-                                
-                                with col2:
-                                    # Link to materials generation
-                                    if st.button("✍️ Generate Materials", key="gen_mat_btn"):
-                                        st.info("💡 Switch to the 'Generate Materials' tab to create personalized cover letters and personal statements!")
-                                
-                                with col3:
-                                    # Save evaluation to history
-                                    if st.button("💾 Save to History", key="save_hist_btn"):
-                                        evaluation_record = {
-                                            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                                            "opportunity": opportunity,
-                                            "result": result
-                                        }
-                                        st.session_state.evaluation_history.append(evaluation_record)
-                                        st.success("✅ Evaluation saved to history!")
-                                        st.rerun()
-                                
-                                with col4:
+                                        with open("matched_opportunities.pkl", "wb") as f:
+                                            pickle.dump(st.session_state.evaluation_history, f)
+                                    except:
+                                        pass
+
+                                # ACTION BUTTONS with enhanced design
+                                st.markdown("<br>", unsafe_allow_html=True)
+                                st.markdown("### 🚀 Next Actions")
+
+                                col_act1, col_act2 = st.columns(2)
+
+                                with col_act1:
+                                    if prefill and prefill.get('link') and prefill.get('link') != 'null':
+                                        st.markdown(f"""
+                                        <a href="{prefill.get('link')}" target="_blank" style="text-decoration: none;">
+                                            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                                        color: white; padding: 15px; border-radius: 10px;
+                                                        text-align: center; cursor: pointer; box-shadow: 0 4px 12px rgba(102,126,234,0.4);">
+                                                🔗 <strong>Apply Now</strong>
+                                            </div>
+                                        </a>
+                                        """, unsafe_allow_html=True)
+                                    else:
+                                        st.info("No application link available")
+
+                                with col_act2:
+                                    if st.button("✍️ Generate Application Materials", use_container_width=True, type="primary", key="gen_mat_image_extracted"):
+                                        st.session_state.selected_opportunity_for_materials = opportunity
+                                        st.session_state.selected_opportunity_data = evaluation_record["opportunity_data"]
+                                        st.success("✅ Materials ready! Go to 'Generate Materials' tab")
+                                        st.info("👉 Click on 'Generate Materials' tab above")
+
+                                # Additional action buttons
+                                col_act3, col_act4 = st.columns(2)
+
+                                with col_act3:
                                     # Save opportunity to database
-                                    if st.button("🗄️ Save to Database", key="save_db_btn", help="Save this opportunity for future use"):
+                                    if st.button("🗄️ Save to Database", key="save_db_btn_image", use_container_width=True, help="Save this opportunity for future use"):
                                         try:
                                             from opportunities_storage import save_opportunity
-                                            
+
                                             opp_data = {
                                                 "title": opportunity.title,
                                                 "type": opportunity.opp_type,
@@ -778,7 +875,7 @@ with tab2:
                                                 "funding": prefill.get('funding') if prefill and prefill.get('funding') != 'null' else None,
                                                 "link": prefill.get('link') if prefill and prefill.get('link') != 'null' else None
                                             }
-                                            
+
                                             if save_opportunity(opp_data):
                                                 st.success("✅ Saved to database!")
                                                 st.info("👉 View in 'Opportunity Database' tab")
@@ -786,16 +883,29 @@ with tab2:
                                                 st.error("Failed to save to database")
                                         except Exception as e:
                                             st.error(f"Error saving: {str(e)}")
-                                
-                                # Auto-save to history (silent)
-                                if not any(record['opportunity'].title == opportunity.title for record in st.session_state.evaluation_history):
-                                    evaluation_record = {
-                                        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                                        "opportunity": opportunity,
-                                        "result": result
-                                    }
-                                    st.session_state.evaluation_history.append(evaluation_record)
-                                
+
+                                with col_act4:
+                                    # Download PDF option
+                                    try:
+                                        from pdf_generator import generate_evaluation_pdf
+                                        pdf_buffer = generate_evaluation_pdf(st.session_state.profile, opportunity, result)
+
+                                        st.download_button(
+                                            label="📄 Download PDF Report",
+                                            data=pdf_buffer.getvalue(),
+                                            file_name=f"evaluation_{opportunity.title.replace(' ', '_')}.pdf",
+                                            mime="application/pdf",
+                                            help="Download a professional PDF report",
+                                            use_container_width=True
+                                        )
+                                    except Exception as e:
+                                        st.button(
+                                            "📄 Download PDF Report",
+                                            disabled=True,
+                                            help="PDF export requires reportlab library",
+                                            use_container_width=True
+                                        )
+
                         except Exception as e:
                             st.error(f"❌ Error during evaluation: {str(e)}")
                             
