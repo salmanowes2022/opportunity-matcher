@@ -5,6 +5,7 @@ python-dotenv
 beautifulsoup4
 requests
 pypdf2
+PyMuPDF
 pillow
 pydantic
 google-generativeai
