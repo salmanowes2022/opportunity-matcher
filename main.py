@@ -79,13 +79,14 @@ if 'active_tab' not in st.session_state:
     st.session_state.active_tab = 0
 
 # Create all tabs
-tab1, tab2, tab3, tab4, tab5,tab6 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "📝 Your Profile",
-    "🔍 Check Match", 
-    "📊 History", 
-    "✍️ Generate Materials", 
+    "🔍 Check Match",
+    "📊 History",
+    "✍️ Generate Materials",
     "📄 Upload Documents",
-    "🗄️ Opportunity Database" 
+    "🗄️ Opportunity Database",
+    "🤖 AI Strategy"
 ])
 
 # TAB 1: Profile Creation
@@ -150,15 +151,15 @@ Rules:
 
                         # Create profile directly
                         st.session_state.profile = UserProfile(
-                            name=profile_data.get('name', 'From CV'),
-                            education_level=profile_data.get('education_level', 'Bachelor\'s'),
-                            field_of_study=profile_data.get('field_of_study', 'Not specified'),
+                            name=profile_data.get('name') or 'From CV',
+                            education_level=profile_data.get('education_level') or 'Bachelor\'s',
+                            field_of_study=profile_data.get('field_of_study') or 'Not specified',
                             gpa=profile_data.get('gpa'),
-                            skills=profile_data.get('skills', 'Not specified'),
-                            experience_years=profile_data.get('experience_years', 0),
-                            languages=profile_data.get('languages', 'English'),
-                            achievements=profile_data.get('achievements', 'See CV for details'),
-                            goals=profile_data.get('goals', 'See CV for details')
+                            skills=profile_data.get('skills') or 'Not specified',
+                            experience_years=profile_data.get('experience_years') or 0,
+                            languages=profile_data.get('languages') or 'English',
+                            achievements=profile_data.get('achievements') or 'See CV for details',
+                            goals=profile_data.get('goals') or 'See CV for details'
                         )
                         st.success("✅ Profile created from CV!")
                         st.balloons()
@@ -874,89 +875,150 @@ with tab2:
                             from ai_evaluator import evaluate_match
                             result = evaluate_match(st.session_state.profile, opportunity)
 
-                            # Display detailed evaluation
-                            st.success(f"✅ Evaluation Complete!")
-                            st.markdown("---")
+                            # OPTIMIZED ANALYTICS-STYLE RESULTS DISPLAY
+                            st.balloons()
 
-                            # Score display
-                            col_s1, col_s2 = st.columns([1, 2])
-                            with col_s1:
-                                st.markdown(f"### {result.compatibility_score:.1%}")
-                                st.markdown(create_status_indicator(result.compatibility_score), unsafe_allow_html=True)
+                            # Header with scholarship title
+                            st.markdown(f"""
+                            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                        padding: 25px; border-radius: 15px; margin-bottom: 20px;">
+                                <h2 style="color: white; margin: 0; text-align: center;">
+                                    📊 Match Analysis Complete
+                                </h2>
+                                <p style="color: rgba(255,255,255,0.9); text-align: center; margin: 10px 0 0 0; font-size: 18px;">
+                                    {selected_opp_data.get('title', 'Scholarship')}
+                                </p>
+                            </div>
+                            """, unsafe_allow_html=True)
 
-                            with col_s2:
-                                if result.compatibility_score >= 0.7:
-                                    st.markdown("""
-                                    <div class="success-card">
-                                        <strong>🟢 Strong Match!</strong><br>
-                                        You are a great fit for this opportunity.
-                                    </div>
-                                    """, unsafe_allow_html=True)
-                                elif result.compatibility_score >= 0.4:
-                                    st.markdown("""
-                                    <div class="warning-card">
-                                        <strong>🟡 Moderate Match</strong><br>
-                                        You have potential but may need to address some gaps.
-                                    </div>
-                                    """, unsafe_allow_html=True)
-                                else:
-                                    st.markdown("""
-                                    <div class="warning-card">
-                                        <strong>🔴 Weak Match</strong><br>
-                                        This may not be the best fit for your profile.
-                                    </div>
-                                    """, unsafe_allow_html=True)
+                            # KEY METRICS ROW with enhanced design
+                            col_m1, col_m2, col_m3, col_m4 = st.columns(4)
 
-                            st.markdown("---")
+                            with col_m1:
+                                score_color = "#4CAF50" if result.compatibility_score >= 0.7 else "#FF9800" if result.compatibility_score >= 0.4 else "#F44336"
+                                st.markdown(f"""
+                                <div style="background: white; padding: 20px; border-radius: 12px;
+                                            border-left: 5px solid {score_color}; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                    <p style="color: #666; margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Match Score</p>
+                                    <h2 style="color: {score_color}; margin: 5px 0; font-size: 36px; font-weight: bold;">{result.compatibility_score:.0%}</h2>
+                                </div>
+                                """, unsafe_allow_html=True)
 
-                            # Detailed results
-                            col_res1, col_res2 = st.columns(2)
+                            with col_m2:
+                                match_label = "Strong" if result.compatibility_score >= 0.7 else "Moderate" if result.compatibility_score >= 0.4 else "Weak"
+                                match_emoji = "🟢" if result.compatibility_score >= 0.7 else "🟡" if result.compatibility_score >= 0.4 else "🔴"
+                                st.markdown(f"""
+                                <div style="background: white; padding: 20px; border-radius: 12px;
+                                            box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                    <p style="color: #666; margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Match Level</p>
+                                    <h3 style="color: #333; margin: 5px 0; font-size: 24px;">{match_emoji} {match_label}</h3>
+                                </div>
+                                """, unsafe_allow_html=True)
 
-                            with col_res1:
-                                st.markdown("### 💪 Your Strengths")
+                            with col_m3:
+                                st.markdown(f"""
+                                <div style="background: white; padding: 20px; border-radius: 12px;
+                                            box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                    <p style="color: #666; margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Type</p>
+                                    <h3 style="color: #333; margin: 5px 0; font-size: 20px;">🎓 {selected_opp_data.get('type', 'N/A')}</h3>
+                                </div>
+                                """, unsafe_allow_html=True)
+
+                            with col_m4:
+                                st.markdown(f"""
+                                <div style="background: white; padding: 20px; border-radius: 12px;
+                                            box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                    <p style="color: #666; margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Provider</p>
+                                    <h3 style="color: #333; margin: 5px 0; font-size: 18px;">🏛️ {selected_opp_data.get('provider', 'N/A')[:20]}</h3>
+                                </div>
+                                """, unsafe_allow_html=True)
+
+                            st.markdown("<br>", unsafe_allow_html=True)
+
+                            # DETAILED ANALYSIS SECTION with tabs
+                            analysis_tab1, analysis_tab2, analysis_tab3 = st.tabs(["💪 Strengths", "⚠️ Gaps", "💡 Recommendation"])
+
+                            with analysis_tab1:
+                                st.markdown("""
+                                <div style="background: linear-gradient(135deg, #667eea22 0%, #764ba222 100%);
+                                            padding: 25px; border-radius: 12px; margin: 15px 0;">
+                                """, unsafe_allow_html=True)
+                                st.markdown("#### What Makes You a Great Candidate")
                                 st.write(result.strengths)
+                                st.markdown("</div>", unsafe_allow_html=True)
 
-                                st.markdown("### 💡 Recommendation")
+                            with analysis_tab2:
+                                st.markdown("""
+                                <div style="background: #fff3cd; padding: 25px; border-radius: 12px;
+                                            border-left: 4px solid #ffc107; margin: 15px 0;">
+                                """, unsafe_allow_html=True)
+                                st.markdown("#### Areas for Improvement")
+                                st.write(result.gaps)
+                                st.markdown("</div>", unsafe_allow_html=True)
+
+                            with analysis_tab3:
+                                st.markdown("""
+                                <div style="background: #d1ecf1; padding: 25px; border-radius: 12px;
+                                            border-left: 4px solid #0dcaf0; margin: 15px 0;">
+                                """, unsafe_allow_html=True)
+                                st.markdown("#### Expert Recommendation")
                                 st.write(result.recommendation)
 
-                            with col_res2:
-                                st.markdown("### ⚠️ Gaps to Address")
-                                st.write(result.gaps)
-
-                                st.markdown("### 📝 Next Steps")
+                                st.markdown("#### 📝 Action Steps")
                                 if result.compatibility_score >= 0.6:
-                                    st.write("✅ Start preparing your application materials")
-                                    st.write("✅ Address the gaps mentioned above")
-                                    st.write("✅ Research the organization/program further")
+                                    st.markdown("""
+                                    - ✅ **High Priority**: Start preparing your application materials
+                                    - 📚 **Research**: Deep dive into the organization/program
+                                    - 🔧 **Optimize**: Address the gaps mentioned above
+                                    - ⏰ **Timeline**: Begin application process immediately
+                                    """)
                                 else:
-                                    st.write("📚 Consider strengthening your profile in identified areas")
-                                    st.write("🔍 Look for opportunities that better match your profile")
+                                    st.markdown("""
+                                    - 📚 **Skill Development**: Strengthen your profile in identified areas
+                                    - 🔍 **Alternative Search**: Look for opportunities that better match your profile
+                                    - 💪 **Profile Enhancement**: Focus on closing critical gaps
+                                    - ⏳ **Future Consideration**: Revisit this opportunity after improvements
+                                    """)
+                                st.markdown("</div>", unsafe_allow_html=True)
 
-                            # Action buttons
-                            st.markdown("---")
+                            # ACTION BUTTONS with enhanced design
+                            st.markdown("<br>", unsafe_allow_html=True)
+                            st.markdown("### 🚀 Next Actions")
+
                             col_act1, col_act2, col_act3 = st.columns(3)
 
                             with col_act1:
                                 if selected_opp_data.get('link'):
-                                    st.markdown(f"[🔗 Apply Now]({selected_opp_data.get('link')})")
+                                    st.markdown(f"""
+                                    <a href="{selected_opp_data.get('link')}" target="_blank" style="text-decoration: none;">
+                                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                                    color: white; padding: 15px; border-radius: 10px;
+                                                    text-align: center; cursor: pointer; box-shadow: 0 4px 12px rgba(102,126,234,0.4);">
+                                            🔗 <strong>Apply Now</strong>
+                                        </div>
+                                    </a>
+                                    """, unsafe_allow_html=True)
+                                else:
+                                    st.info("No application link available")
 
                             with col_act2:
-                                if st.button("✍️ Generate Application Materials", use_container_width=True, key="gen_mat_specific"):
+                                if st.button("✍️ Generate Application Materials", use_container_width=True, type="primary", key="gen_mat_specific"):
                                     st.session_state.selected_opportunity_for_materials = opportunity
                                     st.session_state.selected_opportunity_data = selected_opp_data
-                                    st.info("👉 Go to 'Generate Materials' tab")
+                                    st.success("✅ Materials ready! Go to 'Generate Materials' tab")
 
                             with col_act3:
-                                # Save to history
-                                evaluation_record = {
-                                    "timestamp": datetime.now().isoformat(),
-                                    "opportunity_title": opportunity.title,
-                                    "opportunity_type": opportunity.opp_type,
-                                    "score": result.compatibility_score,
-                                    "result": result
-                                }
-                                st.session_state.evaluation_history.append(evaluation_record)
-                                st.success("💾 Saved to history")
+                                # Save to history button
+                                if st.button("💾 Save to History", use_container_width=True, key="save_specific"):
+                                    evaluation_record = {
+                                        "timestamp": datetime.now().isoformat(),
+                                        "opportunity_title": opportunity.title,
+                                        "opportunity_type": opportunity.opp_type,
+                                        "score": result.compatibility_score,
+                                        "result": result
+                                    }
+                                    st.session_state.evaluation_history.append(evaluation_record)
+                                    st.success("✅ Saved!")
 
                         except Exception as e:
                             st.error(f"Error evaluating scholarship: {str(e)}")
@@ -1217,8 +1279,29 @@ with tab4:
         """, unsafe_allow_html=True)
 
         # Check if opportunity was selected from batch match
-        if st.session_state.selected_opportunity_for_materials:
-            st.success(f"✅ Loaded: {st.session_state.selected_opportunity_for_materials.title}")
+        has_selected_opp = st.session_state.selected_opportunity_for_materials is not None
+        has_selected_opp_data = 'selected_opportunity_data' in st.session_state and st.session_state.selected_opportunity_data
+
+        if has_selected_opp:
+            st.markdown(f"""
+            <div class="success-card">
+                <strong>✅ Auto-filled from selected opportunity</strong><br>
+                {st.session_state.selected_opportunity_for_materials.title}
+            </div>
+            """, unsafe_allow_html=True)
+
+            # Show additional details if available
+            if has_selected_opp_data:
+                col_info1, col_info2, col_info3 = st.columns(3)
+                with col_info1:
+                    if st.session_state.selected_opportunity_data.get('deadline'):
+                        st.info(f"⏰ Deadline: {st.session_state.selected_opportunity_data.get('deadline')}")
+                with col_info2:
+                    if st.session_state.selected_opportunity_data.get('provider'):
+                        st.info(f"🏢 Provider: {st.session_state.selected_opportunity_data.get('provider')}")
+                with col_info3:
+                    if st.session_state.selected_opportunity_data.get('funding'):
+                        st.info(f"💰 Funding: {st.session_state.selected_opportunity_data.get('funding')}")
 
         with st.form("material_generation_form"):
             col1, col2 = st.columns(2)
@@ -1244,7 +1327,7 @@ with tab4:
                 use_selected = False
 
                 if st.session_state.selected_opportunity_for_materials:
-                    use_selected = st.checkbox("Use selected opportunity", value=True)
+                    use_selected = st.checkbox("Use selected opportunity", value=True, help="Automatically filled from your selected match")
 
                 if not use_selected and st.session_state.evaluation_history:
                     use_previous = st.checkbox("Use previous opportunity")
@@ -1257,14 +1340,40 @@ with tab4:
 
             # Opportunity details
             if use_selected and st.session_state.selected_opportunity_for_materials:
-                st.subheader("Selected Opportunity")
-                st.write(f"**Title:** {st.session_state.selected_opportunity_for_materials.title}")
-                st.write(f"**Type:** {st.session_state.selected_opportunity_for_materials.opp_type}")
-                with st.expander("View Details"):
+                st.subheader("Selected Opportunity (Auto-filled)")
+
+                col_det1, col_det2 = st.columns(2)
+                with col_det1:
+                    st.write(f"**Title:** {st.session_state.selected_opportunity_for_materials.title}")
+                    st.write(f"**Type:** {st.session_state.selected_opportunity_for_materials.opp_type}")
+
+                with col_det2:
+                    # Show additional metadata if available
+                    if has_selected_opp_data:
+                        if st.session_state.selected_opportunity_data.get('deadline'):
+                            st.write(f"**Deadline:** {st.session_state.selected_opportunity_data.get('deadline')}")
+                        if st.session_state.selected_opportunity_data.get('funding'):
+                            st.write(f"**Funding:** {st.session_state.selected_opportunity_data.get('funding')}")
+
+                with st.expander("📄 View Full Details", expanded=False):
+                    st.markdown("**Description:**")
                     st.write(st.session_state.selected_opportunity_for_materials.description)
+                    st.markdown("**Requirements:**")
                     st.write(st.session_state.selected_opportunity_for_materials.requirements)
+
+                    # Show link if available
+                    if has_selected_opp_data and st.session_state.selected_opportunity_data.get('link'):
+                        st.markdown(f"**Application Link:** [{st.session_state.selected_opportunity_data.get('link')}]({st.session_state.selected_opportunity_data.get('link')})")
+
+                # Button to clear selection
+                if st.form_submit_button("🔄 Clear & Enter New Opportunity", type="secondary"):
+                    st.session_state.selected_opportunity_for_materials = None
+                    st.session_state.selected_opportunity_data = None
+                    st.rerun()
+
             elif not use_previous:
-                st.subheader("Opportunity Details")
+                st.subheader("Opportunity Details (Manual Entry)")
+                st.info("💡 Tip: Select an opportunity from 'Check Match' or 'Opportunity Database' to auto-fill this form!")
                 opp_title = st.text_input("Opportunity Title")
                 opp_type = st.selectbox("Type", ["Scholarship", "Job", "Academic Program", "Fellowship"])
                 opp_description = st.text_area("Description", height=100)
@@ -1767,16 +1876,16 @@ with tab6:
     # SUB-TAB 2: Browse Database
     with db_tab2:
         st.subheader("Browse All Opportunities")
-        
+
         from opportunities_storage import load_all_opportunities, delete_opportunity
-        
+
         opportunities = load_all_opportunities()
-        
+
         if not opportunities:
             st.info("📭 No opportunities in database yet. Add some in the 'Add Opportunity' tab!")
         else:
             st.write(f"**{len(opportunities)} opportunities in database:**")
-            
+
             # Summary stats
             col1, col2, col3, col4 = st.columns(4)
             with col1:
@@ -1791,19 +1900,27 @@ with tab6:
             with col4:
                 others = len(opportunities) - scholarships - jobs - programs
                 create_metric_card("Others", others)
-            
+
             st.divider()
-            
-            # Display opportunities
-            for opp in reversed(opportunities):  # Show newest first
-                with st.expander(f"🎯 {opp.get('title')} ({opp.get('type')})", expanded=False):
+
+            # Create tabs for different opportunity types
+            browse_tab1, browse_tab2, browse_tab3, browse_tab4 = st.tabs([
+                f"🎓 Scholarships ({scholarships})",
+                f"💼 Jobs ({jobs})",
+                f"🏫 Programs ({programs})",
+                f"📌 All ({len(opportunities)})"
+            ])
+
+            # Helper function to display opportunities
+            def display_opportunity_card(opp, key_prefix=""):
+                with st.expander(f"🎯 {opp.get('title')}", expanded=False):
                     col1, col2 = st.columns([3, 1])
-                    
+
                     with col1:
                         st.write(f"**Type:** {opp.get('type')}")
                         st.write(f"**Description:** {opp.get('description', 'N/A')}")
                         st.write(f"**Requirements:** {opp.get('requirements', 'N/A')}")
-                        
+
                         if opp.get('deadline'):
                             st.write(f"**Deadline:** {opp['deadline']}")
                         if opp.get('provider'):
@@ -1812,12 +1929,12 @@ with tab6:
                             st.write(f"**Funding:** {opp['funding']}")
                         if opp.get('link'):
                             st.write(f"**Link:** {opp['link']}")
-                        
+
                         st.caption(f"Added: {opp.get('saved_at', 'Unknown')}")
-                    
+
                     with col2:
                         # Use this opportunity button
-                        if st.button("✅ Use for Matching", key=f"use_{opp.get('id')}", use_container_width=True):
+                        if st.button("✅ Use for Matching", key=f"{key_prefix}_use_{opp.get('id')}", use_container_width=True):
                             # Pre-fill the extracted data for Tab 2
                             st.session_state.extracted_opportunity_data = {
                                 'title': opp.get('title'),
@@ -1831,15 +1948,51 @@ with tab6:
                             }
                             st.success("✅ Opportunity loaded!")
                             st.info("👉 Go to 'Check Match' tab to evaluate")
-                            st.rerun()  # FIXED: Added rerun to refresh the form
-                        
+                            st.rerun()
+
                         # Delete button
-                        if st.button("🗑️ Delete", key=f"delete_{opp.get('id')}", type="secondary", use_container_width=True):
+                        if st.button("🗑️ Delete", key=f"{key_prefix}_delete_{opp.get('id')}", type="secondary", use_container_width=True):
                             if delete_opportunity(opp.get('id')):
                                 st.success("Deleted!")
                                 st.rerun()
                             else:
                                 st.error("Failed to delete")
+
+            # Scholarships Tab
+            with browse_tab1:
+                scholarship_opps = [o for o in opportunities if o.get('type') == 'Scholarship']
+                if scholarship_opps:
+                    st.write(f"**{len(scholarship_opps)} scholarships available**")
+                    for opp in reversed(scholarship_opps):
+                        display_opportunity_card(opp, key_prefix="scholar")
+                else:
+                    st.info("📭 No scholarships found. Add some in the 'Add Opportunity' tab!")
+
+            # Jobs Tab
+            with browse_tab2:
+                job_opps = [o for o in opportunities if o.get('type') == 'Job']
+                if job_opps:
+                    st.write(f"**{len(job_opps)} jobs available**")
+                    for opp in reversed(job_opps):
+                        display_opportunity_card(opp, key_prefix="job")
+                else:
+                    st.info("📭 No jobs found. Add some in the 'Add Opportunity' tab!")
+
+            # Programs Tab
+            with browse_tab3:
+                program_opps = [o for o in opportunities if o.get('type') == 'Academic Program']
+                if program_opps:
+                    st.write(f"**{len(program_opps)} programs available**")
+                    for opp in reversed(program_opps):
+                        display_opportunity_card(opp, key_prefix="program")
+                else:
+                    st.info("📭 No academic programs found. Add some in the 'Add Opportunity' tab!")
+
+            # All Tab
+            with browse_tab4:
+                st.write(f"**Showing all {len(opportunities)} opportunities (newest first)**")
+                for opp in reversed(opportunities):
+                    display_opportunity_card(opp, key_prefix="all")
     
     # SUB-TAB 3: Search
     with db_tab3:
@@ -1914,6 +2067,228 @@ with tab6:
             - Search by type (e.g., "Scholarship", "Job")
             - Search by keywords in the title
             """)
+
+# TAB 7: AI Strategy - Multi-Agent AI System
+with tab7:
+    st.header("🤖 AI Strategy & Intelligence")
+    st.markdown("Harness the power of multiple AI agents working together to optimize your profile and application strategy.")
+
+    if not st.session_state.profile:
+        st.markdown("""
+        <div class="warning-card">
+            <strong>⚠️ Profile Required</strong><br>
+            Please create your profile first in the 'Your Profile' tab to access AI Strategy features.
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown(f"""
+        <div class="success-card">
+            <strong>✅ Profile Loaded</strong><br>
+            Ready to analyze: <strong>{st.session_state.profile.name}</strong>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("---")
+
+        # Explanation of Multi-Agent System
+        with st.expander("📖 How the Multi-Agent AI System Works"):
+            st.markdown("""
+            Our system uses **4 specialized AI agents** that work in parallel to provide comprehensive insights:
+
+            1. **🔍 Profile Optimizer Agent**
+               - Deep analysis of your strengths and weaknesses
+               - Identifies quick wins and critical gaps
+               - Provides personalized improvement recommendations
+
+            2. **🎯 Opportunity Scout Agent**
+               - Generates targeted search strategies
+               - Identifies optimal platforms and filters
+               - Recommends best timing for applications
+
+            3. **📋 Application Strategist Agent**
+               - Prioritizes applications by success probability
+               - Estimates time investment for each opportunity
+               - Creates customized application roadmap
+
+            4. **🎭 Orchestrator Agent**
+               - Coordinates all agents to run in parallel
+               - Synthesizes results into actionable plan
+               - Calculates overall success metrics
+
+            **Result:** A unified action plan that maximizes your chances of success!
+            """)
+
+        # Main Action Button
+        st.subheader("🚀 Run Complete AI Analysis")
+
+        col_info, col_btn = st.columns([2, 1])
+
+        with col_info:
+            st.info("This will run all AI agents in parallel to analyze your profile, find opportunities, and create an application strategy. Takes ~30-60 seconds.")
+
+        with col_btn:
+            run_analysis = st.button("🤖 Run AI Analysis", type="primary", use_container_width=True)
+
+        if run_analysis:
+            # Load opportunities for analysis
+            from opportunities_storage import load_all_opportunities
+            all_opps = load_all_opportunities()
+
+            if not all_opps:
+                st.warning("⚠️ No opportunities in database. Add some scholarships first!")
+            else:
+                with st.spinner("🤖 AI agents are working... This may take 30-60 seconds"):
+                    try:
+                        # Run batch match to get scored opportunities
+                        from ai_evaluator import evaluate_match
+                        batch_results = []
+
+                        # Evaluate top 10 opportunities for strategy
+                        for opp_data in all_opps[:10]:
+                            try:
+                                from models import Opportunity
+                                opportunity = Opportunity(
+                                    title=opp_data.get('title', ''),
+                                    opp_type=opp_data.get('type', 'Scholarship'),
+                                    description=opp_data.get('description', ''),
+                                    requirements=opp_data.get('requirements', ''),
+                                    deadline=opp_data.get('deadline')
+                                )
+
+                                result = evaluate_match(st.session_state.profile, opportunity)
+
+                                batch_results.append({
+                                    'opportunity': opportunity,
+                                    'result': result,
+                                    'opp_data': opp_data,
+                                    'score': result.compatibility_score
+                                })
+                            except:
+                                pass
+
+                        # Sort by score
+                        batch_results.sort(key=lambda x: x['score'], reverse=True)
+
+                        # Run orchestrator with results
+                        import asyncio
+                        from agents.orchestrator import orchestrate_ai_analysis
+
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                        unified_plan = loop.run_until_complete(
+                            orchestrate_ai_analysis(st.session_state.profile, batch_results)
+                        )
+
+                        st.success("✅ AI Analysis Complete!")
+                        st.markdown("---")
+
+                        # Display Results
+                        st.subheader("📊 Unified Action Plan")
+
+                        # Key Metrics
+                        col_m1, col_m2, col_m3 = st.columns(3)
+
+                        with col_m1:
+                            create_metric_card("Success Probability", f"{unified_plan.success_probability:.1%}")
+
+                        with col_m2:
+                            create_metric_card("Time Investment", f"{unified_plan.time_investment_hours} hours")
+
+                        with col_m3:
+                            create_metric_card("Priority Actions", str(len(unified_plan.priority_actions)))
+
+                        st.markdown("---")
+
+                        # Priority Actions
+                        st.subheader("🎯 Top Priority Actions")
+                        for idx, action in enumerate(unified_plan.priority_actions, 1):
+                            st.markdown(f"{idx}. {action}")
+
+                        st.markdown("---")
+
+                        # Recommended Next Steps
+                        st.subheader("📋 Recommended Next Steps")
+                        for idx, step in enumerate(unified_plan.recommended_next_steps, 1):
+                            st.markdown(f"{idx}. {step}")
+
+                        st.markdown("---")
+
+                        # Detailed Agent Results
+                        st.subheader("🔍 Detailed Agent Analysis")
+
+                        # Profile Optimization Results
+                        if unified_plan.profile_optimization:
+                            with st.expander("🔍 Profile Optimizer Agent Results", expanded=True):
+                                prof_opt = unified_plan.profile_optimization
+
+                                col1, col2 = st.columns(2)
+
+                                with col1:
+                                    st.markdown("### 💪 Quick Wins")
+                                    if 'quick_wins' in prof_opt and prof_opt['quick_wins']:
+                                        for qw in prof_opt['quick_wins'][:5]:
+                                            st.markdown(f"- **{qw.get('action', 'N/A')}** (Impact: {qw.get('impact_score', 0)}/10)")
+                                            st.caption(qw.get('rationale', ''))
+
+                                    st.markdown("### 🌟 Unique Strengths")
+                                    if 'unique_strengths' in prof_opt:
+                                        for strength in prof_opt['unique_strengths'][:3]:
+                                            st.success(f"✓ {strength}")
+
+                                with col2:
+                                    st.markdown("### ⚠️ Critical Gaps")
+                                    if 'critical_gaps' in prof_opt and prof_opt['critical_gaps']:
+                                        for gap in prof_opt['critical_gaps'][:5]:
+                                            st.markdown(f"- **{gap.get('area', 'N/A')}** (Severity: {gap.get('severity', 0)}/10)")
+                                            st.caption(gap.get('description', ''))
+
+                                    st.markdown("### 📊 Profile Strength")
+                                    if 'profile_strength_score' in prof_opt:
+                                        score = prof_opt['profile_strength_score']
+                                        st.metric("Overall Score", f"{score}/10")
+
+                        # Search Strategies
+                        if unified_plan.search_strategies:
+                            with st.expander("🎯 Opportunity Scout Agent Results"):
+                                search_strat = unified_plan.search_strategies
+
+                                if 'recommended_platforms' in search_strat:
+                                    st.markdown("### 🌐 Recommended Platforms")
+                                    for platform in search_strat['recommended_platforms'][:5]:
+                                        st.markdown(f"**{platform.get('name', 'N/A')}** - {platform.get('rationale', '')}")
+
+                                if 'search_keywords' in search_strat:
+                                    st.markdown("### 🔑 Search Keywords")
+                                    st.write(", ".join(search_strat['search_keywords'][:10]))
+
+                        # Application Strategy
+                        if unified_plan.application_strategy:
+                            with st.expander("📋 Application Strategist Agent Results"):
+                                app_strat = unified_plan.application_strategy
+
+                                if 'prioritized_applications' in app_strat and app_strat['prioritized_applications']:
+                                    st.markdown("### 📊 Prioritized Applications")
+                                    for idx, app in enumerate(app_strat['prioritized_applications'][:5], 1):
+                                        col_a, col_b, col_c = st.columns([2, 1, 1])
+
+                                        with col_a:
+                                            st.markdown(f"**{idx}. {app.get('opportunity_title', 'N/A')}**")
+                                            st.caption(app.get('strategy_summary', ''))
+
+                                        with col_b:
+                                            st.metric("Success Rate", f"{app.get('success_probability', 0):.0%}")
+
+                                        with col_c:
+                                            priority = app.get('priority_level', 'Medium')
+                                            color = "🔴" if priority == "High" else "🟡" if priority == "Medium" else "🟢"
+                                            st.metric("Priority", f"{color} {priority}")
+
+                    except Exception as e:
+                        st.error(f"Error running AI analysis: {str(e)}")
+                        with st.expander("Debug Info"):
+                            import traceback
+                            st.code(traceback.format_exc())
+
 # Footer with enhanced styling
 st.divider()
 st.markdown("""
