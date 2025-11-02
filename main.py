@@ -70,7 +70,17 @@ if api_errors:
 if 'profile' not in st.session_state:
     st.session_state.profile = None
 if 'evaluation_history' not in st.session_state:
-    st.session_state.evaluation_history = []
+    # Try to load from file
+    import pickle
+    import os
+    if os.path.exists("matched_opportunities.pkl"):
+        try:
+            with open("matched_opportunities.pkl", "rb") as f:
+                st.session_state.evaluation_history = pickle.load(f)
+        except:
+            st.session_state.evaluation_history = []
+    else:
+        st.session_state.evaluation_history = []
 if 'extracted_opportunity_data' not in st.session_state:
     st.session_state.extracted_opportunity_data = {}
 if 'selected_opportunity_for_materials' not in st.session_state:
@@ -981,11 +991,38 @@ with tab2:
                                     """)
                                 st.markdown("</div>", unsafe_allow_html=True)
 
+                            # AUTOMATICALLY SAVE TO HISTORY
+                            evaluation_record = {
+                                "timestamp": datetime.now().isoformat(),
+                                "opportunity": opportunity,
+                                "opportunity_title": opportunity.title,
+                                "opportunity_type": opportunity.opp_type,
+                                "opportunity_data": selected_opp_data,
+                                "score": result.compatibility_score,
+                                "result": result
+                            }
+
+                            # Check if already in history (avoid duplicates)
+                            already_exists = any(
+                                rec.get('opportunity_title') == opportunity.title
+                                for rec in st.session_state.evaluation_history
+                            )
+
+                            if not already_exists:
+                                st.session_state.evaluation_history.append(evaluation_record)
+                                # Save to local file
+                                import pickle
+                                try:
+                                    with open("matched_opportunities.pkl", "wb") as f:
+                                        pickle.dump(st.session_state.evaluation_history, f)
+                                except:
+                                    pass
+
                             # ACTION BUTTONS with enhanced design
                             st.markdown("<br>", unsafe_allow_html=True)
                             st.markdown("### 🚀 Next Actions")
 
-                            col_act1, col_act2, col_act3 = st.columns(3)
+                            col_act1, col_act2 = st.columns(2)
 
                             with col_act1:
                                 if selected_opp_data.get('link'):
@@ -1007,21 +1044,6 @@ with tab2:
                                     st.session_state.selected_opportunity_data = selected_opp_data
                                     st.success("✅ Materials ready! Go to 'Generate Materials' tab")
                                     st.info("👉 Click on 'Generate Materials' tab above")
-
-                            with col_act3:
-                                # Save to history button
-                                if st.button("💾 Save to History", use_container_width=True, key="save_specific"):
-                                    evaluation_record = {
-                                        "timestamp": datetime.now().isoformat(),
-                                        "opportunity": opportunity,
-                                        "opportunity_title": opportunity.title,
-                                        "opportunity_type": opportunity.opp_type,
-                                        "opportunity_data": selected_opp_data,
-                                        "score": result.compatibility_score,
-                                        "result": result
-                                    }
-                                    st.session_state.evaluation_history.append(evaluation_record)
-                                    st.success("✅ Saved!")
 
                         except Exception as e:
                             st.error(f"Error evaluating scholarship: {str(e)}")
@@ -1315,6 +1337,11 @@ with tab4:
         </div>
         """, unsafe_allow_html=True)
 
+        # Debug info
+        st.write("**Debug Info:**")
+        st.write(f"- Selected opportunity: {st.session_state.selected_opportunity_for_materials is not None}")
+        st.write(f"- History count: {len(st.session_state.evaluation_history)}")
+
         # Check if opportunity was selected from batch match
         has_selected_opp = st.session_state.selected_opportunity_for_materials is not None
         has_selected_opp_data = 'selected_opportunity_data' in st.session_state and st.session_state.selected_opportunity_data
@@ -1424,85 +1451,86 @@ with tab4:
                 st.warning("⚠️ Please select an opportunity from 'Selected Match' or 'History' to generate materials.")
             
             generate_material = st.form_submit_button("✍️ Generate Material", use_container_width=True)
-            
-            if generate_material:
-                # Get opportunity data
-                if use_selected and st.session_state.selected_opportunity_for_materials:
-                    opportunity = st.session_state.selected_opportunity_for_materials
-                elif use_previous and st.session_state.evaluation_history:
-                    opportunity = st.session_state.evaluation_history[selected_opp]['opportunity']
-                else:
-                    st.error("Please select an opportunity from 'Selected Match' or 'History' to generate materials.")
-                    st.stop()
-                
-                # Generate material
-                with st.spinner(f"🤖 Generating {material_type.replace('_', ' ')}... This may take 10-15 seconds."):
-                    try:
-                        from material_generator import generate_application_material
-                        
-                        result = generate_application_material(
-                            st.session_state.profile,
-                            opportunity,
-                            material_type,
-                            target_words
+
+        # Process outside the form
+        if generate_material:
+            # Get opportunity data
+            if use_selected and st.session_state.selected_opportunity_for_materials:
+                opportunity = st.session_state.selected_opportunity_for_materials
+            elif use_previous and st.session_state.evaluation_history:
+                opportunity = st.session_state.evaluation_history[selected_opp]['opportunity']
+            else:
+                st.error("Please select an opportunity from 'Selected Match' or 'History' to generate materials.")
+                st.stop()
+
+            # Generate material
+            with st.spinner(f"🤖 Generating {material_type.replace('_', ' ')}... This may take 10-15 seconds."):
+                try:
+                    from material_generator import generate_application_material
+
+                    result = generate_application_material(
+                        st.session_state.profile,
+                        opportunity,
+                        material_type,
+                        target_words
+                    )
+
+                    # Display results
+                    st.success(f"✅ {material_type.replace('_', ' ').title()} Generated Successfully!")
+
+                    col1, col2 = st.columns([2, 1])
+
+                    with col2:
+                        create_metric_card("Word Count", result.word_count)
+                        create_metric_card("Target", target_words)
+
+                        if abs(result.word_count - target_words) <= 50:
+                            st.success("🎯 Length on target!")
+                        elif result.word_count < target_words * 0.8:
+                            st.warning("📏 Consider expanding")
+                        elif result.word_count > target_words * 1.2:
+                            st.warning("✂️ Consider shortening")
+
+                    with col1:
+                        st.subheader("Generated Material")
+                        st.text_area(
+                            "Content",
+                            value=result.content,
+                            height=400,
+                            help="Copy this content and customize as needed"
                         )
-                        
-                        # Display results
-                        st.success(f"✅ {material_type.replace('_', ' ').title()} Generated Successfully!")
-                        
-                        col1, col2 = st.columns([2, 1])
-                        
-                        with col2:
-                            create_metric_card("Word Count", result.word_count)
-                            create_metric_card("Target", target_words)
-                            
-                            if abs(result.word_count - target_words) <= 50:
-                                st.success("🎯 Length on target!")
-                            elif result.word_count < target_words * 0.8:
-                                st.warning("📏 Consider expanding")
-                            elif result.word_count > target_words * 1.2:
-                                st.warning("✂️ Consider shortening")
-                        
-                        with col1:
-                            st.subheader("Generated Material")
-                            st.text_area(
-                                "Content",
-                                value=result.content,
-                                height=400,
-                                help="Copy this content and customize as needed"
-                            )
-                        
-                        # Key points and suggestions
-                        col1, col2 = st.columns(2)
-                        
-                        with col1:
-                            st.markdown("""
-                            <div class="success-card">
-                                <h4>🎯 Key Points Highlighted</h4>
-                            </div>
-                            """, unsafe_allow_html=True)
-                            for point in result.key_points_highlighted:
-                                st.write(f"• {point}")
-                        
-                        with col2:
-                            st.markdown("""
-                            <div class="info-card">
-                                <h4>💡 Suggestions for Improvement</h4>
-                            </div>
-                            """, unsafe_allow_html=True)
-                            st.write(result.suggestions_for_improvement)
-                        
-                        # Download option
-                        st.divider()
-                        st.download_button(
-                            label=f"📄 Download {material_type.replace('_', ' ').title()} (TXT)",
-                            data=result.content,
-                            file_name=f"{material_type}_{opportunity.title.replace(' ', '_')}.txt",
-                            mime="text/plain"
-                        )
-                        
-                    except Exception as e:
-                        st.error(f"❌ Error generating material: {str(e)}")
+
+                    # Key points and suggestions
+                    col1, col2 = st.columns(2)
+
+                    with col1:
+                        st.markdown("""
+                        <div class="success-card">
+                            <h4>🎯 Key Points Highlighted</h4>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        for point in result.key_points_highlighted:
+                            st.write(f"• {point}")
+
+                    with col2:
+                        st.markdown("""
+                        <div class="info-card">
+                            <h4>💡 Suggestions for Improvement</h4>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        st.write(result.suggestions_for_improvement)
+
+                    # Download option (OUTSIDE FORM)
+                    st.divider()
+                    st.download_button(
+                        label=f"📄 Download {material_type.replace('_', ' ').title()} (TXT)",
+                        data=result.content,
+                        file_name=f"{material_type}_{opportunity.title.replace(' ', '_')}.txt",
+                        mime="text/plain"
+                    )
+
+                except Exception as e:
+                    st.error(f"❌ Error generating material: {str(e)}")
 
 # TAB 5: Document Upload and Analysis
 with tab5:
