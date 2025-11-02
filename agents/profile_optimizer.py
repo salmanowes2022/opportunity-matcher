@@ -1,5 +1,4 @@
 from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
 from models import UserProfile
 from pydantic import BaseModel, Field
 from typing import List, Dict

@@ -1,5 +1,4 @@
 from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
 from models import UserProfile, Opportunity, ApplicationMaterial
 import os
 

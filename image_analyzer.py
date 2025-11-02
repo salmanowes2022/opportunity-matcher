@@ -1,5 +1,4 @@
 from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
 from models import DocumentAnalysis
 import os
 import base64
