@@ -90,21 +90,38 @@ Also provide:
 - Suggestions for how the candidate could improve or customize further
 """
 
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", system_prompt),
-        ("human", human_prompt)
-    ])
-
     llm = ChatOpenAI(
         model="gpt-4o-mini",
         temperature=0.5,  # Slightly higher for more creative writing
         api_key=os.environ.get("OPENAI_API_KEY")
     )
 
-    chain = prompt | llm.with_structured_output(ApplicationMaterial)
+    chain = llm.with_structured_output(ApplicationMaterial)
+
+    # Format the messages
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": human_prompt.format(
+            name=profile.name,
+            education_level=profile.education_level,
+            field_of_study=profile.field_of_study,
+            gpa=profile.gpa or "Not provided",
+            experience_years=profile.experience_years,
+            skills=profile.skills,
+            languages=profile.languages,
+            achievements=profile.achievements,
+            goals=profile.goals,
+            opp_title=opportunity.title,
+            opp_type=opportunity.opp_type,
+            opp_description=opportunity.description,
+            opp_requirements=opportunity.requirements,
+            material_type=material_type,
+            target_words=target_words
+        )}
+    ]
 
     try:
-        result = chain.invoke({})
+        result = chain.invoke(messages)
         
         # Count words in the generated content
         word_count = len(result.content.split())

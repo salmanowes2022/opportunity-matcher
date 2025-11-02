@@ -47,12 +47,6 @@ Please evaluate this match and provide:
 
 Be specific and actionable in your feedback."""
 
-    # Create the prompt template
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", system_prompt),
-        ("human", human_prompt)
-    ])
-
     # Initialize the LLM
     llm = ChatOpenAI(
         model="gpt-4o-mini",  # Cheaper and faster
@@ -61,7 +55,7 @@ Be specific and actionable in your feedback."""
     )
 
     # Create chain with structured output - ONLY MatchResult
-    chain = prompt | llm.with_structured_output(MatchResult)
+    chain = llm.with_structured_output(MatchResult)
 
     # Prepare the data
     input_data = {
@@ -80,9 +74,15 @@ Be specific and actionable in your feedback."""
         "opp_requirements": opportunity.requirements
     }
 
+    # Format the messages
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": human_prompt.format(**input_data)}
+    ]
+
     # Run the chain
     try:
-        result = chain.invoke(input_data)
+        result = chain.invoke(messages)
         return result
     except Exception as e:
         # Return a fallback result if something goes wrong
